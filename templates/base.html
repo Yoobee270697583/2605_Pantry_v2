@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pantry{% endblock %}</title>
+    <link rel="icon" href="{% static 'img/pantry-favicon.svg' %}" type="image/svg+xml">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="d-flex">
+
+{% comment %}
+    NAV LINKS
+    Every href is "#" for now because no apps exist yet.
+    When an app is added, swap its "#" for {% url '<app>:index' %} — the
+    URL names below are suggestions, agree them with Adam.
+
+    The "active" highlight works automatically: it compares the link's
+    app name with request.resolver_match.app_name, so views don't need to
+    pass active_page like they did in V1. For that to work, each app's
+    urls.py needs  app_name = "<app>"  (e.g. app_name = "recipes").
+{% endcomment %}
+{% with app=request.resolver_match.app_name %}
+
+    <!-- Desktop / tablet: left sidebar (hidden below 768px) -->
+    <nav class="pantry-sidebar d-none d-md-flex flex-column flex-shrink-0 border-end pantry-surface">
+        <a href="#" class="pantry-logo text-decoration-none">Pantry</a> {# kitchen:index #}
+
+        <ul class="nav flex-column flex-grow-1 pantry-sidebar-links">
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'kitchen' %}active{% endif %}">My Kitchen</a></li>            {# kitchen:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">My Pantry</a></li>              {# pantry:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'recipes' %}active{% endif %}">My Recipes</a></li>            {# recipes:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li> {# suggestions:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'planned' %}active{% endif %}">Planned Meals</a></li>         {# planned:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'cooked' %}active{% endif %}">Cooked Meals</a></li>           {# cooked:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'shopping' %}active{% endif %}">Shopping Lists</a></li>       {# shopping:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'orders' %}active{% endif %}">Previous Orders</a></li>        {# orders:index #}
+        </ul>
+
+        <!-- Account menu (replaces V1's custom toggle script with a Bootstrap dropup) -->
+        <div class="dropup border-top pantry-account">
+            {% if user.is_authenticated %}
+                <button type="button" class="pantry-account-trigger" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="pantry-avatar">{{ user.first_name|default:user.username|first|upper }}</span>
+                    <span class="pantry-account-name text-truncate">{{ user.first_name|default:user.username }}</span>
+                </button>
+                <ul class="dropdown-menu shadow-sm">
+                    <li><a class="dropdown-item" href="#">Settings</a></li>
+                    <li>
+                        {# Django 5 only allows logout via POST, so this is a form, not a link. #}
+                        <form method="post" action="#"> {# logout URL, e.g. {% url 'logout' %} #}
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item">Log out</button>
+                        </form>
+                    </li>
+                </ul>
+            {% else %}
+                <div class="p-3"><a href="#" class="btn btn-primary w-100">Log in</a></div> {# login URL #}
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="pantry-content flex-grow-1">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Mobile: bottom bar (hidden from 768px up) -->
+    <nav class="pantry-bottom-nav d-md-none fixed-bottom border-top pantry-surface">
+        <div class="nav nav-fill">
+            <a href="#" class="nav-link {% if app == 'kitchen' %}active{% endif %}">Home</a>                                                 {# kitchen:index #}
+            <a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">Pantry</a>                                                {# pantry:index #}
+            <a href="#" class="nav-link {% if app == 'recipes' or app == 'suggestions' %}active{% endif %}">Recipes</a>                      {# recipes:index #}
+            <a href="#" class="nav-link {% if app == 'planned' or app == 'cooked' %}active{% endif %}">Meals</a>                             {# planned:index #}
+            <a href="#" class="nav-link {% if app == 'shopping' or app == 'orders' %}active{% endif %}">Shopping</a>                         {# shopping:index #}
+        </div>
+    </nav>
+
+{% endwith %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
