@@ -1,0 +1,166 @@
+/* ==========================================================================
+   Pantry V2.0 — shared styles
+   Bootstrap does almost everything; this file only holds brand tokens and
+   the few custom pieces shared across pages. See CSS_GUIDE.md.
+   ========================================================================== */
+
+/* ---------- Design tokens ---------- */
+:root {
+    --pantry-brand: #0f6e56;
+    --pantry-brand-hover: #1d9e75;
+    --pantry-brand-soft: #eaf4ee;   /* active nav background (from V1) */
+    --pantry-hover-soft: #f0f4f1;   /* nav hover background (from V1) */
+    --pantry-bg: #f7f8f7;           /* page background (from V1) */
+    --pantry-surface: #ffffff;      /* sidebar, menus, bottom bar */
+    --pantry-on-brand: #ffffff;     /* text on brand-green backgrounds */
+    --pantry-text: #1f2421;
+    --pantry-nav-text: #444c47;
+    --pantry-border: #e3e6e3;
+
+    --pantry-sidebar-width: 240px;
+    --pantry-bottom-nav-height: 64px;
+
+    --bs-primary: #0f6e56;
+    --bs-primary-rgb: 15, 110, 86;
+    --bs-body-bg: var(--pantry-bg);
+    --bs-body-color: var(--pantry-text);
+    --bs-border-color: var(--pantry-border);
+    --bs-link-color: var(--pantry-brand);
+    --bs-link-color-rgb: 15, 110, 86;
+    --bs-link-hover-color: var(--pantry-brand-hover);
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--pantry-brand);
+    --bs-btn-border-color: var(--pantry-brand);
+    --bs-btn-hover-bg: var(--pantry-brand-hover);
+    --bs-btn-hover-border-color: var(--pantry-brand-hover);
+    --bs-btn-active-bg: var(--pantry-brand-hover);
+    --bs-btn-active-border-color: var(--pantry-brand-hover);
+}
+
+/* ---------- App shell: sidebar (tablet & up) ---------- */
+.pantry-sidebar {
+    width: var(--pantry-sidebar-width);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    padding-top: 20px;
+}
+
+.pantry-logo {
+    padding: 0 24px 20px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--pantry-brand);
+}
+
+.pantry-sidebar-links .nav-link {
+    padding: 11px 24px;
+    color: var(--pantry-nav-text);
+    font-size: 0.95rem;
+    border-left: 3px solid transparent;
+}
+
+.pantry-sidebar-links .nav-link:hover {
+    background: var(--pantry-hover-soft);
+    color: var(--pantry-nav-text);
+}
+
+.pantry-sidebar-links .nav-link.active {
+    background: var(--pantry-brand-soft);
+    color: var(--pantry-brand);
+    font-weight: 600;
+    border-left-color: var(--pantry-brand);
+}
+
+/* ---------- App shell: account area (bottom of sidebar) ---------- */
+.pantry-account-trigger {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    text-align: left;
+    color: inherit;
+}
+
+.pantry-account-trigger:hover {
+    background: var(--pantry-hover-soft);
+}
+
+.pantry-account-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.pantry-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--pantry-brand);
+    color: var(--pantry-on-brand);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.pantry-account .dropdown-menu {
+    --bs-dropdown-bg: var(--pantry-surface);
+    --bs-dropdown-link-hover-bg: var(--pantry-hover-soft);
+    width: calc(100% - 2rem);
+    margin-left: 1rem !important;
+}
+
+/* ---------- App shell: content area ---------- */
+.pantry-content {
+    min-width: 0; /* stops wide tables/cards from pushing past the viewport */
+    padding: 32px 40px;
+}
+
+.pantry-content h1 {
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* ---------- App shell: bottom bar (mobile only) ---------- */
+.pantry-bottom-nav {
+    height: var(--pantry-bottom-nav-height);
+}
+
+.pantry-bottom-nav .nav {
+    height: 100%;
+    flex-wrap: nowrap;
+}
+
+.pantry-bottom-nav .nav-link {
+    height: 100%;
+    padding: 0 0.25rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pantry-nav-text);
+    font-size: 0.8rem;
+}
+
+.pantry-bottom-nav .nav-link.active {
+    color: var(--pantry-brand);
+    font-weight: 600;
+}
+
+/* mobile: tighter padding, and room so the fixed bottom bar never covers content */
+@media (max-width: 767.98px) {
+    .pantry-content {
+        padding: 20px 18px calc(var(--pantry-bottom-nav-height) + 26px);
+    }
+}
+
+/* white panels (sidebar, bottom bar) */
+.pantry-surface {
+    background: var(--pantry-surface);
+}
