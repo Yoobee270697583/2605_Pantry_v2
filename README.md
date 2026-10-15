@@ -91,6 +91,20 @@ deactivate
 
 ---
 
+## Data Sources
+
+### TheMealDB
+
+Recipes and the ingredient list come from [TheMealDB](https://www.themealdb.com/api.php).
+
+### USDA FoodData Central
+
+Gram weights for common ingredients come from [USDA FoodData Central](https://fdc.nal.usda.gov/). 
+
+```
+
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the branching/PR workflow and [CSS_GUIDE.md](CSS_GUIDE.md) for stylesheet structure and conventions.
