@@ -28,6 +28,16 @@ class Ingredient(models.Model):
     # the recipe import works out which one fits best
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="each")
 
+    # fdcId from USDA FoodData Central - only filled in for the ingredients
+    # we've linked to USDA, empty for everything else
+    fdc_id = models.IntegerField(blank=True, null=True)
+
+    # gram weights from USDA, used to convert recipe amounts like "1 cup" or
+    # "2 onions" into this ingredient's unit - empty if we don't have them
+    grams_per_cup = models.FloatField(blank=True, null=True)
+    grams_per_tbsp = models.FloatField(blank=True, null=True)
+    grams_per_each = models.FloatField(blank=True, null=True)
+
     class Meta:
         ordering = ["name"]
 
