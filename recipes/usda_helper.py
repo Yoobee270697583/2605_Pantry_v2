@@ -12,7 +12,10 @@ BATCH_SIZE = 20
 
 # portion names that mean "one of the thing", in the order we'd rather use them
 # e.g. for onions we want "medium" (110g) before "large" (150g)
-EACH_WORDS = ["medium", "whole", "clove", "large", "small", "piece", "slice", "thigh", "breast", "fillet"]
+EACH_WORDS = [
+    "medium", "whole", "clove", "large", "small", "piece", "slice",
+    "thigh", "breast", "fillet", "sprig", "leaf", "leaves",
+]
 
 
 def get_headers():
@@ -73,8 +76,12 @@ def get_foods(fdc_ids):
     return foods
 
 
-def find_portion_grams(portions, words):
-    """Finds the first portion whose name starts with one of the words (checked in order) and returns the grams for one. None if there isn't one."""
+def find_portion_grams(portions, words, anywhere=False):
+    """Finds the first portion whose name starts with one of the words (checked in order) and returns the grams for one. None if there isn't one.
+
+    anywhere=True also matches the word later in the name, e.g. "medium" in
+    "Potato medium (2-1/4" to 3-1/4" dia)".
+    """
     for word in words:
         for portion in portions:
             # SR Legacy foods keep the portion name in "modifier" e.g. "cup, chopped" or "tbsp"
@@ -82,7 +89,12 @@ def find_portion_grams(portions, words):
             amount = portion.get("amount") or 1
             grams = portion.get("gramWeight")
 
-            if name.startswith(word) and grams:
+            if anywhere:
+                matched = word in name.split()
+            else:
+                matched = name.startswith(word)
+
+            if matched and grams:
                 # some portions are for more than one e.g. "3 cloves", so divide to get one
                 return round(grams / amount, 2)
 
@@ -103,6 +115,11 @@ def get_portion_weights(food):
             grams_per_tbsp = round(grams_per_tsp * 3, 2)
 
     grams_per_each = find_portion_grams(portions, EACH_WORDS)
+
+    # some foods put their own name first e.g. "Potato medium", so if nothing
+    # started with a size word, look for one anywhere in the name
+    if grams_per_each is None:
+        grams_per_each = find_portion_grams(portions, ["medium", "large", "small"], anywhere=True)
 
     return {
         "grams_per_cup": grams_per_cup,
