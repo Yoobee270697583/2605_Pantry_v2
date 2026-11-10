@@ -19,6 +19,7 @@ A Django web app for managing your pantry, recipes, meal planning, and shopping.
 
 ```
 config/             Django project settings and root URLs
+recipes/            Ingredient and recipe models, TheMealDB helpers and import commands
 manage.py           Django management commands
 requirements.txt    Python dependencies
 .env.example        Template for your local .env file
@@ -60,10 +61,19 @@ Generate a `SECRET_KEY` with:
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-### 5. Run the application
+### 5. Create the tables and load the recipe data
 
 ```
 python manage.py migrate
+python manage.py import_ingredients
+python manage.py import_recipes
+```
+
+`import_ingredients` loads TheMealDB's ingredient list and `import_recipes` loads the recipes. Both need an internet connection and are safe to run again. `import_recipes` skips any recipe with amounts it can't convert, and prints how many it imported and skipped.
+
+### 6. Run the application
+
+```
 python manage.py runserver
 ```
 
@@ -73,7 +83,7 @@ The app will be available at:
 http://127.0.0.1:8000
 ```
 
-### 6. Deactivate the virtual environment
+### 7. Deactivate the virtual environment
 
 ```
 deactivate
