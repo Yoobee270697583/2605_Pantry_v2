@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'kitchen',
+    'households',
+    'pantry',
 ]
 
 MIDDLEWARE = [
