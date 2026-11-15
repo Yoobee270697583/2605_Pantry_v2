@@ -66,10 +66,17 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 ```
 python manage.py migrate
 python manage.py import_ingredients
+python manage.py merge_ingredients
+python manage.py import_usda_portions
 python manage.py import_recipes
 ```
 
-`import_ingredients` loads TheMealDB's ingredient list and `import_recipes` loads the recipes. Both need an internet connection and are safe to run again. `import_recipes` skips any recipe with amounts it can't convert, and prints how many it imported and skipped.
+- `import_ingredients` loads TheMealDB's ingredient list
+- `merge_ingredients` merges ingredients TheMealDB lists more than once (e.g. Onions and Yellow Onion into Onion) and saves the other names as aliases
+- `import_usda_portions` adds USDA gram weights for common ingredients, so amounts like "1 cup flour" can be converted. The `DEMO_KEY` from `.env.example` works for this
+- `import_recipes` loads the recipes, skipping any with amounts it can't convert
+
+They're all safe to run again. If your database was set up before `merge_ingredients` existed, just run `migrate`, `merge_ingredients` and `import_recipes`.
 
 ### 6. Run the application
 
@@ -99,9 +106,9 @@ Recipes and the ingredient list come from [TheMealDB](https://www.themealdb.com/
 
 ### USDA FoodData Central
 
-Gram weights for common ingredients come from [USDA FoodData Central](https://fdc.nal.usda.gov/). 
+Gram weights for common ingredients come from [USDA FoodData Central](https://fdc.nal.usda.gov/). Put your own free key from [api.data.gov](https://api.data.gov/signup/) in `.env` as `USDA_API_KEY`, or leave it as `DEMO_KEY`.
 
-```
+Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. fdc.nal.usda.gov. Public domain (CC0 1.0).
 
 ---
 
