@@ -1,0 +1,23 @@
+{% load allauth %}
+{% if attrs.type == "checkbox" %}
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="{{ attrs.name }}" id="{{ attrs.id }}" {% if attrs.value %}checked{% endif %}>
+        <label class="form-check-label" for="{{ attrs.id }}">{% slot label %}{% endslot %}</label>
+    </div>
+{% else %}
+    <div class="mb-3">
+        <label class="form-label" for="{{ attrs.id }}">{% slot label %}{% endslot %}</label>
+        <input class="form-control{% if attrs.errors %} is-invalid{% endif %}"
+               type="{{ attrs.type }}" name="{{ attrs.name }}" id="{{ attrs.id }}"
+               {% if attrs.required %}required{% endif %}
+               {% if attrs.placeholder %}placeholder="{{ attrs.placeholder }}"{% endif %}
+               {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
+               {% if attrs.value is not None and attrs.type != "password" %}value="{{ attrs.value }}"{% endif %}>
+        {% for error in attrs.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+        {% if slots.help_text %}
+            <div class="form-text">{% slot help_text %}{% endslot %}</div>
+        {% endif %}
+    </div>
+{% endif %}

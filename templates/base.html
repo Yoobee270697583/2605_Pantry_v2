@@ -28,17 +28,17 @@
 
     <!-- Desktop / tablet: left sidebar (hidden below 768px) -->
     <nav class="pantry-sidebar d-none d-md-flex flex-column flex-shrink-0 border-end pantry-surface">
-        <a href="#" class="pantry-logo text-decoration-none">Pantry</a> {# kitchen:index #}
+        <a href="{% url 'kitchen:index' %}" class="pantry-logo text-decoration-none">Pantry</a> {# kitchen #}
 
         <ul class="nav flex-column flex-grow-1 pantry-sidebar-links">
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'kitchen' %}active{% endif %}">My Kitchen</a></li>            {# kitchen:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">My Pantry</a></li>              {# pantry:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'recipes' %}active{% endif %}">My Recipes</a></li>            {# recipes:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li> {# suggestions:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'planned' %}active{% endif %}">Planned Meals</a></li>         {# planned:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'cooked' %}active{% endif %}">Cooked Meals</a></li>           {# cooked:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'shopping' %}active{% endif %}">Shopping Lists</a></li>       {# shopping:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'orders' %}active{% endif %}">Previous Orders</a></li>        {# orders:index #}
+            <li class="nav-item"><a href="{% url 'kitchen:index' %}" class="nav-link {% if app == 'kitchen' %}active{% endif %}">My Kitchen</a></li>        {# kitchen:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">My Pantry</a></li>                                  {# pantry:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'recipes' %}active{% endif %}">My Recipes</a></li>                                {# recipes:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li>                     {# suggestions:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'planned' %}active{% endif %}">Planned Meals</a></li>                             {# planned:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'cooked' %}active{% endif %}">Cooked Meals</a></li>                               {# cooked:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'shopping' %}active{% endif %}">Shopping Lists</a></li>                           {# shopping:index #}
+            <li class="nav-item"><a href="#" class="nav-link {% if app == 'orders' %}active{% endif %}">Previous Orders</a></li>                            {# orders:index #}
         </ul>
 
         <!-- Account menu (replaces V1's custom toggle script with a Bootstrap dropup) -->
@@ -52,14 +52,14 @@
                     <li><a class="dropdown-item" href="#">Settings</a></li>
                     <li>
                         {# Django 5 only allows logout via POST, so this is a form, not a link. #}
-                        <form method="post" action="#"> {# logout URL, e.g. {% url 'logout' %} #}
+                        <form method="post" action="{% url 'account_logout' %}">
                             {% csrf_token %}
                             <button type="submit" class="dropdown-item">Log out</button>
                         </form>
                     </li>
                 </ul>
             {% else %}
-                <div class="p-3"><a href="#" class="btn btn-primary w-100">Log in</a></div> {# login URL #}
+                <div class="p-3"><a href="{% url 'account_login' %}" class="btn btn-primary w-100">Log in</a></div>
             {% endif %}
         </div>
     </nav>
@@ -81,7 +81,7 @@
     <!-- Mobile: bottom bar (hidden from 768px up) -->
     <nav class="pantry-bottom-nav d-md-none fixed-bottom border-top pantry-surface">
         <div class="nav nav-fill">
-            <a href="#" class="nav-link {% if app == 'kitchen' %}active{% endif %}">Home</a>                                                 {# kitchen:index #}
+            <a href="{% url 'kitchen:index' %}" class="nav-link {% if app == 'kitchen' %}active{% endif %}">Home</a>                         {# kitchen #}
             <a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">Pantry</a>                                                {# pantry:index #}
             <a href="#" class="nav-link {% if app == 'recipes' or app == 'suggestions' %}active{% endif %}">Recipes</a>                      {# recipes:index #}
             <a href="#" class="nav-link {% if app == 'planned' or app == 'cooked' %}active{% endif %}">Meals</a>                             {# planned:index #}
