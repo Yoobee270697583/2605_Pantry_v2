@@ -164,3 +164,8 @@
 .pantry-surface {
     background: var(--pantry-surface);
 }
+
+/* ---------- Auth pages (login, signup, password reset) ---------- */
+.pantry-auth-card {
+    max-width: 420px;
+}
