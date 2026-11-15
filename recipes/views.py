@@ -1,5 +1,5 @@
 from django.core.paginator import Paginator
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from .models import Recipe
 
 # how many recipe cards to show on each page
@@ -52,4 +52,25 @@ def index(request):
         "categories": categories,
         "areas": areas,
         "filter_params": params.urlencode(),
+    })
+
+
+def detail(request, pk):
+    """Shows one recipe - its ingredients, instructions and youtube video."""
+    recipe = get_object_or_404(Recipe, pk=pk)
+
+    # select_related grabs each line's ingredient in the same query,
+    # ordered by id so they stay in the same order as the original recipe
+    ingredients = recipe.ingredients.select_related("ingredient").order_by("id")
+
+    # turn "https://www.youtube.com/watch?v=abc123" into an embed link for the video player
+    youtube_embed_url = ""
+    if "v=" in recipe.youtube_url:
+        video_id = recipe.youtube_url.split("v=")[1].split("&")[0]
+        youtube_embed_url = f"https://www.youtube.com/embed/{video_id}"
+
+    return render(request, "recipes/detail.html", {
+        "recipe": recipe,
+        "ingredients": ingredients,
+        "youtube_embed_url": youtube_embed_url,
     })

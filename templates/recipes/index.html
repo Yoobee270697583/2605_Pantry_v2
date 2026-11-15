@@ -46,7 +46,10 @@
                         <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="card-img-top object-fit-cover" loading="lazy">
                     </div>
                     <div class="card-body">
-                        <h2 class="card-title h6 mb-2">{{ recipe.name }}</h2>
+                        <h2 class="card-title h6 mb-2">
+                            {# stretched-link makes the whole card clickable #}
+                            <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
+                        </h2>
                         {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
                         {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
                     </div>
