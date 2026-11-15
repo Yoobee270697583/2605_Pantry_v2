@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ingredient, Recipe, RecipeIngredient
+from .models import Ingredient, IngredientAlias, Recipe, RecipeIngredient
 
 
 # shows a recipe's ingredient lines inside that recipe's admin page
@@ -10,11 +10,19 @@ class RecipeIngredientInline(admin.TabularInline):
     autocomplete_fields = ["ingredient"]
 
 
+# shows an ingredient's other names inside that ingredient's admin page
+class IngredientAliasInline(admin.TabularInline):
+    model = IngredientAlias
+    extra = 0
+
+
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ["name", "unit"]
     list_filter = ["unit"]
-    search_fields = ["name"]
+    # aliases__name means searching "yellow onion" still finds Onion
+    search_fields = ["name", "aliases__name"]
+    inlines = [IngredientAliasInline]
 
 
 @admin.register(Recipe)
