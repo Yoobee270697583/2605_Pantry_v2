@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 from .models import Recipe
@@ -6,6 +7,7 @@ from .models import Recipe
 RECIPES_PER_PAGE = 24
 
 
+@login_required
 def index(request):
     """Lists the recipes in our database, with search by name and category/cuisine filters."""
     search_query = request.GET.get("q", "").strip()
@@ -55,6 +57,7 @@ def index(request):
     })
 
 
+@login_required
 def detail(request, pk):
     """Shows one recipe - its ingredients, instructions and youtube video."""
     recipe = get_object_or_404(Recipe, pk=pk)
