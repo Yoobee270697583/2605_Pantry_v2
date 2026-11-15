@@ -15,7 +15,6 @@ from recipes.usda_helper import get_foods, get_portion_weights
 USDA_INGREDIENTS = {
     # butter
     "Butter": 173410,               # Butter, salted
-    "Melted Butter": 173410,        # Butter, salted
     "Unsalted Butter": 173430,      # Butter, without salt
 
     # sugar
@@ -25,9 +24,7 @@ USDA_INGREDIENTS = {
     "Icing Sugar": 169656,          # Sugars, powdered
 
     # flour
-    "Flour": 168894,                # Wheat flour, white, all-purpose, enriched, bleached
-    "Plain Flour": 168894,
-    "All purpose flour": 168894,
+    "Plain Flour": 168894,          # Wheat flour, white, all-purpose, enriched, bleached
     "Cornstarch": 169698,           # Cornstarch
     "Corn Flour": 169698,           # UK cornflour is the same as cornstarch
 
@@ -37,7 +34,6 @@ USDA_INGREDIENTS = {
     "Garlic": 169230,               # Garlic, raw
     "Carrots": 170393,              # Carrots, raw
     "Tomato": 170457,               # Tomatoes, red, ripe, raw, year round average
-    "Tomatoes": 170457,
     "Mushrooms": 169251,            # Mushrooms, white, raw
     "Spring Onions": 170005,        # Onions, spring or scallions, raw
     "Red Pepper": 170108,           # Peppers, sweet, red, raw
