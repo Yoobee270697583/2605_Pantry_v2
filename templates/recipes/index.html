@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Recipes — Pantry{% endblock %}
+
+{% block content %}
+<h1>Recipes</h1>
+<p class="text-body-secondary">
+    {{ total }} recipe{{ total|pluralize }}
+    {% if search_query or selected_category or selected_area %}
+        found <a href="{% url 'recipes:index' %}" class="ms-2">Clear search</a>
+    {% endif %}
+</p>
+
+{# GET form so the search ends up in the url and the page links can keep it #}
+<form method="get" class="row g-2 mb-4">
+    <div class="col-12 col-lg-4">
+        <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search recipes" aria-label="Search recipes">
+    </div>
+    <div class="col-6 col-lg-3">
+        <select name="category" class="form-select" aria-label="Category">
+            <option value="">All categories</option>
+            {% for category in categories %}
+                <option value="{{ category }}" {% if category == selected_category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-6 col-lg-3">
+        <select name="area" class="form-select" aria-label="Cuisine">
+            <option value="">All cuisines</option>
+            {% for area in areas %}
+                <option value="{{ area }}" {% if area == selected_area %}selected{% endif %}>{{ area }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-12 col-lg-2">
+        <button type="submit" class="btn btn-primary w-100">Search</button>
+    </div>
+</form>
+
+{% if page.object_list %}
+    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3">
+        {% for recipe in page %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="ratio ratio-4x3">
+                        <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="card-img-top object-fit-cover" loading="lazy">
+                    </div>
+                    <div class="card-body">
+                        <h2 class="card-title h6 mb-2">{{ recipe.name }}</h2>
+                        {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
+                        {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if page.has_other_pages %}
+        <nav aria-label="Recipe pages" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page.previous_page_number }}">Previous</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+
+                {% if page.has_next %}
+                    <li class="page-item"><a class="page-link" href="?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page.next_page_number }}">Next</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <p class="text-body-secondary">No recipes match your search, try something else.</p>
+{% endif %}
+{% endblock %}

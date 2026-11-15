@@ -15,8 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('recipes/', include('recipes.urls')),
+    # there's no home page yet, so send people to the recipes page for now -
+    # swap this for the kitchen app's url once My Kitchen is built
+    path('', RedirectView.as_view(pattern_name='recipes:index')),
 ]
