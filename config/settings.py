@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'accounts',
     'allauth',
     'allauth.account',
+    'kitchen',
 ]
 
 MIDDLEWARE = [
@@ -148,4 +149,5 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_URL = "home"
+LOGIN_REDIRECT_URL = "kitchen:index"
