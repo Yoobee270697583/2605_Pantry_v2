@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ recipe.name }} — Pantry{% endblock %}
 
@@ -7,7 +8,16 @@
 
 <div class="row g-4 mt-1">
     <div class="col-md-5">
-        <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="img-fluid rounded shadow-sm w-100">
+        {% if recipe.image_url %}
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="img-fluid rounded shadow-sm w-100">
+        {% else %}
+            {# custom recipes don't need a photo, so show the Pantry icon instead #}
+            <div class="ratio ratio-4x3 rounded shadow-sm bg-body-tertiary">
+                <div class="d-flex align-items-center justify-content-center">
+                    <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="120" class="opacity-50">
+                </div>
+            </div>
+        {% endif %}
     </div>
 
     <div class="col-md-7">
@@ -47,12 +57,19 @@
                     <img src="{{ line.ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0" loading="lazy">
                     <span class="flex-grow-1">{{ line.ingredient.name }}</span>
                     <span class="text-end">
-                        {{ line.measure_text }}
-                        {% if line.is_tracked %}
-                            {# the amount the pantry will use, after converting to the ingredient's unit #}
-                            <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
+                        {% if line.measure_text %}
+                            {{ line.measure_text }}
+                            {% if line.is_tracked %}
+                                {# the amount the pantry will use, after converting to the ingredient's unit #}
+                                <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
+                            {% else %}
+                                <small class="d-block text-body-secondary">not tracked</small>
+                            {% endif %}
+                        {% elif line.is_tracked %}
+                            {# custom recipes have no measure_text, their amount is already in the ingredient's unit #}
+                            {{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}
                         {% else %}
-                            <small class="d-block text-body-secondary">not tracked</small>
+                            <small class="text-body-secondary">not tracked</small>
                         {% endif %}
                     </span>
                 </li>

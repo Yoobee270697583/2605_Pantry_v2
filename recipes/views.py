@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from households.utils import get_household
-from .models import SavedRecipe
+from .forms import IngredientLineFormSet, RecipeForm
+from .models import Ingredient, IngredientAlias, RecipeIngredient, SavedRecipe
 from .utils import visible_recipes
 
 # how many recipe cards to show on each page
@@ -141,3 +143,65 @@ def unsave_recipe(request, pk):
     messages.success(request, f"{recipe.name} removed from your saved recipes.")
 
     return redirect("recipes:detail", pk=recipe.pk)
+
+
+@login_required
+def create_recipe(request):
+    """The Create Recipe page. A custom recipe belongs to the household, so only people in it can see it."""
+    form = RecipeForm(request.POST or None)
+    # the prefix keeps the line fields apart from the recipe's, e.g. "lines-0-ingredient"
+    lines = IngredientLineFormSet(request.POST or None, prefix="lines")
+
+    if request.method == "POST" and form.is_valid() and lines.is_valid():
+        # atomic means the recipe and its lines get saved together, or not at all
+        with transaction.atomic():
+            recipe = form.save(commit=False)
+            recipe.source = "Custom"
+            recipe.household = get_household(request.user)
+            recipe.created_by = request.user
+            recipe.save()
+            save_lines(recipe, lines)
+
+        messages.success(request, f"{recipe.name} created.")
+        return redirect("recipes:detail", pk=recipe.pk)
+
+    names, units = ingredient_choices()
+    return render(request, "recipes/recipe_form.html", {
+        "form": form,
+        "lines": lines,
+        "ingredient_names": names,
+        "ingredient_units": units,
+    })
+
+
+def save_lines(recipe, lines):
+    """Saves the ingredient lines from the form onto the recipe. Empty lines are skipped."""
+    for line in lines.cleaned_data:
+        if line.get("ingredient") is None:
+            continue
+
+        RecipeIngredient.objects.create(
+            recipe=recipe,
+            ingredient=line["ingredient"],
+            quantity=line["quantity"],
+            # no amount (e.g. salt to taste) means it shows on the recipe but isn't taken from the pantry
+            is_tracked=line["quantity"] is not None,
+        )
+
+
+def ingredient_choices():
+    """What the ingredient boxes on the Create Recipe page need - every ingredient name to
+    suggest while typing, and each name's unit to show next to the amount box."""
+    names = []
+    # lowercase name -> unit, e.g. "onion" -> "Each"
+    units = {}
+
+    for ingredient in Ingredient.objects.all():
+        names.append(ingredient.name)
+        units[ingredient.name.lower()] = ingredient.get_unit_display()
+
+    # other names like "Onions" work too, they just aren't suggested
+    for alias in IngredientAlias.objects.select_related("ingredient"):
+        units[alias.name.lower()] = alias.ingredient.get_unit_display()
+
+    return names, units

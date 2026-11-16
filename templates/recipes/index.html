@@ -1,9 +1,13 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Recipes — Pantry{% endblock %}
 
 {% block content %}
-<h1>Recipes</h1>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h1 class="mb-0">Recipes</h1>
+    <a href="{% url 'recipes:create' %}" class="btn btn-primary">+ Create Recipe</a>
+</div>
 
 <!-- 2 tabs -->
 <ul class="nav nav-tabs mb-3">
@@ -61,7 +65,14 @@
             <div class="col">
                 <div class="card h-100 shadow-sm">
                     <div class="ratio ratio-4x3">
-                        <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="card-img-top object-fit-cover" loading="lazy">
+                        {% if recipe.image_url %}
+                            <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="card-img-top object-fit-cover" loading="lazy">
+                        {% else %}
+                            {# custom recipes don't need a photo, so show the Pantry icon instead #}
+                            <div class="card-img-top bg-body-tertiary d-flex align-items-center justify-content-center">
+                                <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="64" class="opacity-50">
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="card-body">
                         <h2 class="card-title h6 mb-2">

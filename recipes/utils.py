@@ -1,6 +1,6 @@
 from django.db.models import Q
 
-from .models import Recipe
+from .models import Ingredient, IngredientAlias, Recipe
 
 
 def visible_recipes(household):
@@ -12,3 +12,19 @@ def visible_recipes(household):
     """
     # household is empty for TheMealDB recipes, so everyone can see those
     return Recipe.objects.filter(Q(household__isnull=True) | Q(household=household))
+
+
+def find_ingredient(name):
+    """Finds an ingredient by its name, or by another name for it like "Onions". Upper/lower case doesn't matter.
+
+    Returns None if we don't have it.
+    """
+    ingredient = Ingredient.objects.filter(name__iexact=name).first()
+
+    # names that merge_ingredients merged into another ingredient, e.g. "onions" -> Onion
+    if ingredient is None:
+        alias = IngredientAlias.objects.select_related("ingredient").filter(name__iexact=name).first()
+        if alias:
+            ingredient = alias.ingredient
+
+    return ingredient

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Create Recipe — Pantry{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'recipes:index' %}" class="link-secondary text-decoration-none">&larr; Back to recipes</a>
+    <h1 class="mt-2 mb-0">Create a Recipe</h1>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <!-- the recipe's details -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Details</h2>
+
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Recipe Name</label>
+                        {{ form.name }}
+                        {% for error in form.name.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">Category <span class="text-secondary">(optional)</span></label>
+                            {{ form.category }}
+                            {% for error in form.category.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="{{ form.area.id_for_label }}" class="form-label">Cuisine <span class="text-secondary">(optional)</span></label>
+                            {{ form.area }}
+                            {% for error in form.area.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.image_url.id_for_label }}" class="form-label">Image Link <span class="text-secondary">(optional)</span></label>
+                        {{ form.image_url }}
+                        {% for error in form.image_url.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                        <div class="form-text">Paste a link to a photo of the dish.</div>
+                        {# shows the photo as soon as a link is pasted, like V1 did #}
+                        <img id="image-preview" src="{{ form.image_url.value|default_if_none:'' }}" alt="Image preview"
+                             class="img-fluid rounded mt-2 {% if not form.image_url.value %}d-none{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="{{ form.instructions.id_for_label }}" class="form-label">Instructions</label>
+                        {{ form.instructions }}
+                        {% for error in form.instructions.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- the ingredient lines -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-1">Ingredients</h2>
+                    <p class="form-text mt-0 mb-3">
+                        Start typing to pick from our ingredient list. Amounts are in the unit shown next to the box,
+                        so they work with your pantry. Leave the amount empty for things like salt to taste.
+                    </p>
+
+                    {# errors about the whole list, e.g. no ingredients or the same one twice #}
+                    {% for error in lines.non_form_errors %}
+                        <div class="alert alert-danger py-2">{{ error }}</div>
+                    {% endfor %}
+
+                    {# tells Django how many lines were sent #}
+                    {{ lines.management_form }}
+
+                    <div id="ingredient-lines">
+                        {% for line in lines %}
+                            {% include "recipes/ingredient_line.html" %}
+                        {% endfor %}
+                    </div>
+
+                    <button type="button" id="add-line" class="btn btn-outline-primary btn-sm">+ Add ingredient</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-4">Create Recipe</button>
+</form>
+
+{# the blank line "+ Add ingredient" copies. __prefix__ gets swapped for the line's number #}
+<template id="empty-line">
+    {% include "recipes/ingredient_line.html" with line=lines.empty_form %}
+</template>
+
+{# every ingredient name, suggested while typing in an ingredient box #}
+<datalist id="ingredient-list">
+    {% for name in ingredient_names %}
+        <option value="{{ name }}">
+    {% endfor %}
+</datalist>
+
+{# name -> unit for the script below. json_script makes it safe to put in the page #}
+{{ ingredient_units|json_script:"ingredient-units" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // lowercase ingredient name -> its unit, e.g. "onion" -> "Each"
+    var units = JSON.parse(document.getElementById("ingredient-units").textContent);
+    var lineList = document.getElementById("ingredient-lines");
+
+    // shows the unit for whatever is typed in a line's ingredient box
+    function showUnit(line) {
+        var name = line.querySelector(".ingredient-name").value.trim().toLowerCase();
+        line.querySelector(".ingredient-unit").textContent = units[name] || "–";
+    }
+
+    // listening on the whole list means lines added with the button work too
+    lineList.addEventListener("input", function (event) {
+        if (event.target.classList.contains("ingredient-name")) {
+            showUnit(event.target.closest(".ingredient-line"));
+        }
+    });
+
+    // the x button empties the line and hides it. empty lines are ignored when saving
+    lineList.addEventListener("click", function (event) {
+        var button = event.target.closest(".remove-line");
+        if (button) {
+            var line = button.closest(".ingredient-line");
+            line.querySelectorAll("input").forEach(function (input) {
+                input.value = "";
+            });
+            line.classList.add("d-none");
+        }
+    });
+
+    // copies the blank line onto the end, numbered after the last one
+    document.getElementById("add-line").addEventListener("click", function () {
+        var total = document.getElementById("id_lines-TOTAL_FORMS");
+        var html = document.getElementById("empty-line").innerHTML.replace(/__prefix__/g, total.value);
+        lineList.insertAdjacentHTML("beforeend", html);
+        total.value = parseInt(total.value) + 1;
+        lineList.lastElementChild.querySelector(".ingredient-name").focus();
+    });
+
+    // fills in the units for lines that already have an ingredient, e.g. when the form comes back with an error
+    lineList.querySelectorAll(".ingredient-line").forEach(showUnit);
+
+    // shows the photo as soon as a link is pasted
+    var imageBox = document.getElementById("id_image_url");
+    var preview = document.getElementById("image-preview");
+    imageBox.addEventListener("input", function () {
+        preview.src = imageBox.value;
+        preview.classList.toggle("d-none", imageBox.value.trim() === "");
+    });
+</script>
+{% endblock %}

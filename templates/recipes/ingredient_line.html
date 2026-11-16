@@ -1,0 +1,32 @@
+{# one ingredient line on the Create Recipe page. used for every line, and as the blank copy the "+ Add ingredient" button adds #}
+{# on phones the name gets its own row, with the amount and x underneath #}
+<div class="ingredient-line row g-2 mb-3 mb-sm-2">
+    <div class="col-12 col-sm">
+        {# list="ingredient-list" gives suggestions from our ingredients while typing #}
+        <input type="text" name="{{ line.ingredient.html_name }}" id="{{ line.ingredient.id_for_label }}"
+               value="{{ line.ingredient.value|default_if_none:'' }}" list="ingredient-list" autocomplete="off"
+               class="form-control ingredient-name {% if line.ingredient.errors %}is-invalid{% endif %}"
+               placeholder="Ingredient" aria-label="Ingredient">
+        {% for error in line.ingredient.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="col col-sm-4">
+        {# the unit comes from the ingredient, so it's shown next to the box instead of being picked #}
+        <div class="input-group {% if line.quantity.errors %}has-validation{% endif %}">
+            <input type="number" name="{{ line.quantity.html_name }}" id="{{ line.quantity.id_for_label }}"
+                   value="{{ line.quantity.value|default_if_none:'' }}" step="any" min="0"
+                   class="form-control {% if line.quantity.errors %}is-invalid{% endif %}"
+                   placeholder="Amount" aria-label="Amount">
+            <span class="input-group-text ingredient-unit">–</span>
+            {% for error in line.quantity.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-auto">
+        <button type="button" class="btn btn-outline-secondary remove-line" aria-label="Remove ingredient">&times;</button>
+    </div>
+</div>
