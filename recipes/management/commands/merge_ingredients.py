@@ -12,7 +12,9 @@ from recipes.unit_helper import convert_to_ingredient_unit
 #     amounts into that ingredient's unit
 #   - saves the duplicate's name as an alias, so the imports map it from now on
 #   - deletes the duplicate
-# safe to run again - anything already merged just gets skipped
+# no recipe ever gets removed - if an amount can't be converted, that line just
+# stops being tracked (like a "pinch" line). safe to run again - anything
+# already merged just gets skipped
 
 # duplicate name -> the ingredient it gets merged into
 # only things that are really the same thing in a pantry get merged. some look
@@ -117,7 +119,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         merged = 0
         lines_moved = 0
-        removed_recipes = []
+        untracked_lines = []
 
         for duplicate_name, kept_name in INGREDIENT_ALIASES.items():
             kept = Ingredient.objects.filter(name__iexact=kept_name).first()
@@ -140,7 +142,7 @@ class Command(BaseCommand):
                 continue
 
             try:
-                moved, removed = self.merge(duplicate, kept)
+                moved, untracked = self.merge(duplicate, kept)
             except ProtectedError:
                 # something else (like a pantry item) still points at the duplicate
                 self.stdout.write(self.style.WARNING(
@@ -150,24 +152,23 @@ class Command(BaseCommand):
 
             merged += 1
             lines_moved += moved
-            removed_recipes += removed
+            untracked_lines += untracked
 
         self.stdout.write(self.style.SUCCESS(
             f"merged {merged} duplicate ingredients, moved {lines_moved} recipe lines"
         ))
-        if removed_recipes:
-            self.stdout.write(f"removed {len(removed_recipes)} recipes with amounts that couldn't be converted:")
-            for name in removed_recipes:
-                self.stdout.write(f"  {name}")
+        if untracked_lines:
+            self.stdout.write(f"{len(untracked_lines)} lines couldn't be converted, so they're kept but not tracked:")
+            for line in untracked_lines:
+                self.stdout.write(f"  {line}")
 
     def merge(self, duplicate, kept):
         """Moves the duplicate's recipe lines onto the kept ingredient, then deletes the duplicate.
 
-        Returns (number of lines moved, names of any recipes that had to be removed).
+        Returns (number of lines moved, descriptions of any lines that had to stop being tracked).
         """
         lines_moved = 0
-        removed_recipes = []
-        removed_ids = set()
+        untracked_lines = []
 
         # atomic means if anything goes wrong, this merge gets undone completely
         with transaction.atomic():
@@ -186,23 +187,18 @@ class Command(BaseCommand):
                 kept.save()
 
             for line in duplicate.recipe_ingredients.select_related("recipe"):
-                # this line's recipe was already removed further up the loop
-                if line.recipe_id in removed_ids:
-                    continue
-
                 # the quantity is in the duplicate's unit, so convert it to the kept one
                 if line.is_tracked and duplicate.unit != kept.unit:
                     quantity = convert_to_ingredient_unit(line.quantity, duplicate.unit, kept)
 
                     if quantity is None:
-                        # same rule as import_recipes - if an amount can't be
-                        # converted, the recipe can't be kept
-                        removed_recipes.append(line.recipe.name)
-                        removed_ids.add(line.recipe_id)
-                        line.recipe.delete()
-                        continue
-
-                    line.quantity = quantity
+                        # can't convert it, so keep the line on the recipe but stop
+                        # tracking it against the pantry - better than losing the recipe
+                        line.quantity = None
+                        line.is_tracked = False
+                        untracked_lines.append(f"{line.recipe.name}: {line.measure_text} {duplicate.name}")
+                    else:
+                        line.quantity = quantity
 
                 line.ingredient = kept
                 line.save()
@@ -210,4 +206,4 @@ class Command(BaseCommand):
 
             duplicate.delete()
 
-        return lines_moved, removed_recipes
+        return lines_moved, untracked_lines
