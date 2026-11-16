@@ -32,7 +32,7 @@
 
         <ul class="nav flex-column flex-grow-1 pantry-sidebar-links">
             <li class="nav-item"><a href="{% url 'kitchen:index' %}" class="nav-link {% if app == 'kitchen' %}active{% endif %}">My Kitchen</a></li>        {# kitchen:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">My Pantry</a></li>                                  {# pantry:index #}
+            <li class="nav-item"><a href="{% url 'pantry:index' %}" class="nav-link {% if app == 'pantry' %}active{% endif %}">My Pantry</a></li>
             <li class="nav-item"><a href="{% url 'recipes:index' %}" class="nav-link {% if app == 'recipes' %}active{% endif %}">My Recipes</a></li>        {# recipes:index #}
             <li class="nav-item"><a href="#" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li>                     {# suggestions:index #}
             <li class="nav-item"><a href="#" class="nav-link {% if app == 'planned' %}active{% endif %}">Planned Meals</a></li>                             {# planned:index #}
@@ -82,7 +82,7 @@
     <nav class="pantry-bottom-nav d-md-none fixed-bottom border-top pantry-surface">
         <div class="nav nav-fill">
             <a href="{% url 'kitchen:index' %}" class="nav-link {% if app == 'kitchen' %}active{% endif %}">Home</a>                         {# kitchen #}
-            <a href="#" class="nav-link {% if app == 'pantry' %}active{% endif %}">Pantry</a>                                                {# pantry:index #}
+            <a href="{% url 'pantry:index' %}" class="nav-link {% if app == 'pantry' %}active{% endif %}">Pantry</a>
             <a href="{% url 'recipes:index' %}" class="nav-link {% if app == 'recipes' or app == 'suggestions' %}active{% endif %}">Recipes</a> {# recipes:index #}
             <a href="#" class="nav-link {% if app == 'planned' or app == 'cooked' %}active{% endif %}">Meals</a>                             {# planned:index #}
             <a href="#" class="nav-link {% if app == 'shopping' or app == 'orders' %}active{% endif %}">Shopping</a>                         {# shopping:index #}

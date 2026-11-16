@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{# one template for both add and edit - is_edit decides the wording #}
+{% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} {{ ingredient.name }} — Pantry{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'pantry:index' %}{% if not is_edit %}?tab=ingredients{% endif %}" class="link-secondary text-decoration-none">← Back to pantry</a>
+    <h1 class="mt-2 mb-0">{% if is_edit %}Edit {{ ingredient.name }}{% else %}Add {{ ingredient.name }} to Pantry{% endif %}</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-7 col-xl-5">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% for error in form.non_field_errors %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity</label>
+                        {# the unit comes from the ingredient, so it's shown next to the box instead of being picked #}
+                        <div class="input-group {% if form.quantity.errors %}has-validation{% endif %}">
+                            <input type="number" name="{{ form.quantity.html_name }}" id="{{ form.quantity.id_for_label }}"
+                                   class="form-control {% if form.quantity.errors %}is-invalid{% endif %}"
+                                   step="any" min="0" value="{{ form.quantity.value|default_if_none:'' }}" required>
+                            <span class="input-group-text">{{ ingredient.get_unit_display }}</span>
+                            {% for error in form.quantity.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                        {{ form.category }}
+                        {% for error in form.category.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.expiry_date.id_for_label }}" class="form-label">Expiry Date <span class="text-secondary">(optional)</span></label>
+                        {{ form.expiry_date }}
+                        {% for error in form.expiry_date.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">{% if is_edit %}Save Changes{% else %}Add Item{% endif %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

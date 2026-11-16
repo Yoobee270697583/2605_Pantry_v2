@@ -22,12 +22,17 @@
 
     --bs-primary: #0f6e56;
     --bs-primary-rgb: 15, 110, 86;
-    --bs-body-bg: var(--pantry-bg);
     --bs-body-color: var(--pantry-text);
     --bs-border-color: var(--pantry-border);
     --bs-link-color: var(--pantry-brand);
     --bs-link-color-rgb: 15, 110, 86;
     --bs-link-hover-color: var(--pantry-brand-hover);
+}
+
+/* page background is grey like V1, but Bootstrap's own --bs-body-bg stays
+   white, because cards, tables and form inputs use it for their background */
+body {
+    background-color: var(--pantry-bg);
 }
 
 .btn-primary {
@@ -37,6 +42,17 @@
     --bs-btn-hover-border-color: var(--pantry-brand-hover);
     --bs-btn-active-bg: var(--pantry-brand-hover);
     --bs-btn-active-border-color: var(--pantry-brand-hover);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--pantry-brand);
+    --bs-btn-border-color: var(--pantry-brand);
+    --bs-btn-hover-bg: var(--pantry-brand);
+    --bs-btn-hover-border-color: var(--pantry-brand);
+    --bs-btn-hover-color: var(--pantry-on-brand);
+    --bs-btn-active-bg: var(--pantry-brand-hover);
+    --bs-btn-active-border-color: var(--pantry-brand-hover);
+    --bs-btn-active-color: var(--pantry-on-brand);
 }
 
 /* ---------- App shell: sidebar (tablet & up) ---------- */
