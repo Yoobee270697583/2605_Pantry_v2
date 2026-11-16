@@ -2,11 +2,11 @@ from collections import Counter
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from recipes.api_helper import search_recipes_by_letter, get_ingredients
-from recipes.models import Ingredient, Recipe, RecipeIngredient
+from recipes.models import Ingredient, IngredientAlias, Recipe, RecipeIngredient
 from recipes.unit_helper import parse_measure, to_base, convert_to_ingredient_unit
 
 # run with: python manage.py import_recipes
-# run import_ingredients first so the Ingredient table is filled.
+# run import_ingredients and merge_ingredients first so the Ingredient table is filled.
 # pulls every recipe from TheMealDB and only saves the ones where every
 # ingredient line converts cleanly into that ingredient's unit (g, ml or each).
 # lines like "pinch" or "to taste" still get saved, just not tracked.
@@ -21,8 +21,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # lowercase name -> Ingredient, so "salt" and "Salt" both match
         ingredients = {}
+        by_id = {}
         for ingredient in Ingredient.objects.all():
             ingredients[ingredient.name.lower()] = ingredient
+            by_id[ingredient.id] = ingredient
+
+        # merged names point at the ingredient they were merged into, e.g.
+        # "onions" -> Onion (see merge_ingredients). uses the same Ingredient
+        # object so a unit change below shows up under both names
+        for alias in IngredientAlias.objects.all():
+            ingredients[alias.name.lower()] = by_id[alias.ingredient_id]
 
         if len(ingredients) == 0:
             self.stdout.write(self.style.ERROR(
@@ -68,9 +76,15 @@ class Command(BaseCommand):
             self.stdout.write(f"  {count} - {reason}")
 
     def set_ingredient_units(self, meals, ingredients):
-        """Picks the unit each ingredient is stored in - whichever kind (g, ml or each) the recipes use most."""
-        # lowercase ingredient name -> Counter of how often each unit is used
-        unit_counts = {}
+        """Picks the unit each ingredient is stored in - whichever kind (g, ml or each) the recipes use most.
+
+        Only recipes that use the ingredient's own name count, so a merged name
+        like "Flour" (mostly in cups) can't change what "Plain Flour" (mostly in
+        grams) is stored in. If nothing uses its own name, its aliases decide.
+        """
+        # ingredient id -> Counter of how often each unit is used
+        own_counts = {}
+        alias_counts = {}
 
         for meal in meals:
             for item in get_ingredients(meal):
@@ -80,19 +94,30 @@ class Command(BaseCommand):
                 if key not in ingredients or unit is None or unit == "untracked":
                     continue
 
+                ingredient = ingredients[key]
+
                 # only need the unit here e.g. tbsp -> ml, kg -> g
                 base_unit = to_base(quantity, unit)[1]
 
-                if key not in unit_counts:
-                    unit_counts[key] = Counter()
-                unit_counts[key][base_unit] += 1
+                # was it written with the ingredient's own name, or one of its aliases?
+                if key == ingredient.name.lower():
+                    counts = own_counts
+                else:
+                    counts = alias_counts
+
+                if ingredient.id not in counts:
+                    counts[ingredient.id] = Counter()
+                counts[ingredient.id][base_unit] += 1
 
         # don't change the unit of an ingredient that recipes already use,
         # or their saved quantities would suddenly be in the wrong unit
         used_ids = set(RecipeIngredient.objects.values_list("ingredient_id", flat=True))
 
-        for key, counts in unit_counts.items():
-            ingredient = ingredients[key]
+        for ingredient in set(ingredients.values()):
+            counts = own_counts.get(ingredient.id) or alias_counts.get(ingredient.id)
+            if not counts:
+                continue
+
             best_unit = counts.most_common(1)[0][0]
 
             if ingredient.id not in used_ids and ingredient.unit != best_unit:

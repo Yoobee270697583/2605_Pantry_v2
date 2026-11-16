@@ -45,6 +45,28 @@ class Ingredient(models.Model):
         return self.name
 
 
+class IngredientAlias(models.Model):
+    """Another name for an ingredient, e.g. "Onions" or "Yellow Onion" for Onion, so duplicates from TheMealDB all point at one ingredient."""
+
+    # the other name, spelt the way TheMealDB spells it
+    name = models.CharField(max_length=150, unique=True)
+
+    # the ingredient this name really means
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name="aliases"
+    )
+
+    class Meta:
+        ordering = ["name"]
+        # otherwise the admin calls them "ingredient aliass"
+        verbose_name_plural = "ingredient aliases"
+
+    def __str__(self):
+        return f"{self.name} -> {self.ingredient.name}"
+
+
 class Recipe(models.Model):
     """A recipe imported from TheMealDB. Shared by every user, instead of each user getting their own copy like in V1."""
 

@@ -15,19 +15,17 @@ from recipes.usda_helper import get_foods, get_portion_weights
 USDA_INGREDIENTS = {
     # butter
     "Butter": 173410,               # Butter, salted
-    "Melted Butter": 173410,        # Butter, salted
     "Unsalted Butter": 173430,      # Butter, without salt
 
     # sugar
     "Sugar": 169655,                # Sugars, granulated
     "Caster Sugar": 169655,         # Sugars, granulated
     "Brown Sugar": 168833,          # Sugars, brown
+    "Dark Brown Sugar": 168833,     # Sugars, brown
     "Icing Sugar": 169656,          # Sugars, powdered
 
     # flour
-    "Flour": 168894,                # Wheat flour, white, all-purpose, enriched, bleached
-    "Plain Flour": 168894,
-    "All purpose flour": 168894,
+    "Plain Flour": 168894,          # Wheat flour, white, all-purpose, enriched, bleached
     "Cornstarch": 169698,           # Cornstarch
     "Corn Flour": 169698,           # UK cornflour is the same as cornstarch
 
@@ -37,7 +35,7 @@ USDA_INGREDIENTS = {
     "Garlic": 169230,               # Garlic, raw
     "Carrots": 170393,              # Carrots, raw
     "Tomato": 170457,               # Tomatoes, red, ripe, raw, year round average
-    "Tomatoes": 170457,
+    "Chopped Tomatoes": 170051,     # Tomatoes, red, ripe, canned, packed in tomato juice
     "Mushrooms": 169251,            # Mushrooms, white, raw
     "Spring Onions": 170005,        # Onions, spring or scallions, raw
     "Red Pepper": 170108,           # Peppers, sweet, red, raw
@@ -74,6 +72,13 @@ USDA_INGREDIENTS = {
     "Tomato Puree": 170460,         # Tomato products, canned, puree
 }
 
+# grams in one "each" where USDA's portion doesn't match how recipes use it.
+# for tinned tomatoes, "1 can" means a standard 400g tin, but USDA's "can"
+# portion is a small 190g one and its "each" would be one whole tomato
+EACH_WEIGHT_OVERRIDES = {
+    "Chopped Tomatoes": 400,
+}
+
 
 class Command(BaseCommand):
     help = "Saves USDA gram weights for common ingredients so more recipe amounts can be converted"
@@ -108,6 +113,9 @@ class Command(BaseCommand):
                 continue
 
             weights = get_portion_weights(food)
+
+            if name in EACH_WEIGHT_OVERRIDES:
+                weights["grams_per_each"] = EACH_WEIGHT_OVERRIDES[name]
 
             ingredient.fdc_id = fdc_id
             ingredient.grams_per_cup = weights["grams_per_cup"]
