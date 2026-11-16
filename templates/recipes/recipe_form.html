@@ -1,11 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Create Recipe — Pantry{% endblock %}
+{# one template for creating and editing a recipe - is_edit decides the wording #}
+{% block title %}{% if is_edit %}Edit Recipe{% else %}Create Recipe{% endif %} — Pantry{% endblock %}
 
 {% block content %}
 <div class="mb-4">
-    <a href="{% url 'recipes:index' %}" class="link-secondary text-decoration-none">&larr; Back to recipes</a>
-    <h1 class="mt-2 mb-0">Create a Recipe</h1>
+    {% if is_edit %}
+        <a href="{% url 'recipes:detail' recipe.pk %}" class="link-secondary text-decoration-none">&larr; Back to recipe</a>
+    {% else %}
+        <a href="{% url 'recipes:index' %}" class="link-secondary text-decoration-none">&larr; Back to recipes</a>
+    {% endif %}
+    <h1 class="mt-2 mb-0">{% if is_edit %}Edit Recipe{% else %}Create a Recipe{% endif %}</h1>
 </div>
 
 <form method="post" novalidate>
@@ -96,7 +101,7 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary mt-4">Create Recipe</button>
+    <button type="submit" class="btn btn-primary mt-4">{% if is_edit %}Save Changes{% else %}Create Recipe{% endif %}</button>
 </form>
 
 {# the blank line "+ Add ingredient" copies. __prefix__ gets swapped for the line's number #}

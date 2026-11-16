@@ -10,4 +10,6 @@ urlpatterns = [
     path("<int:pk>/", views.detail, name="detail"),
     path("<int:pk>/save/", views.save_recipe, name="save"),
     path("<int:pk>/unsave/", views.unsave_recipe, name="unsave"),
+    path("<int:pk>/edit/", views.edit_recipe, name="edit"),
+    path("<int:pk>/delete/", views.delete_recipe, name="delete"),
 ]

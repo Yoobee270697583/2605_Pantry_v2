@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from households.utils import get_household
 from .forms import IngredientLineFormSet, RecipeForm
-from .models import Ingredient, IngredientAlias, RecipeIngredient, SavedRecipe
+from .models import Ingredient, IngredientAlias, Recipe, RecipeIngredient, SavedRecipe
 from .utils import visible_recipes
 
 # how many recipe cards to show on each page
@@ -95,8 +96,9 @@ def detail(request, pk):
     """Shows one recipe - its ingredients, instructions and youtube video."""
     household = get_household(request.user)
 
-    # another household's custom recipe is a 404, the same as a recipe that doesn't exist
-    recipe = get_object_or_404(visible_recipes(household), pk=pk)
+    # another household's custom recipe is a 404, the same as a recipe that doesn't exist.
+    # select_related gets who created it (for "Created by") in the same query
+    recipe = get_object_or_404(visible_recipes(household).select_related("created_by"), pk=pk)
 
     # select_related grabs each line's ingredient in the same query,
     # ordered by id so they stay in the same order as the original recipe
@@ -182,9 +184,65 @@ def create_recipe(request):
     return render(request, "recipes/recipe_form.html", {
         "form": form,
         "lines": lines,
+        "is_edit": False,
         "ingredient_names": names,
         "ingredient_units": units,
     })
+
+
+@login_required
+def edit_recipe(request, pk):
+    """Edits one of the household's custom recipes. Anyone in the household can edit any of its recipes."""
+    # filtering by household means TheMealDB recipes and other households' recipes are a 404,
+    # instead of being editable (V1 didn't check who owned a recipe before letting you edit it)
+    recipe = get_object_or_404(Recipe, pk=pk, household=get_household(request.user))
+
+    # the recipe's lines as they are now, so the form starts filled in
+    current_lines = []
+    for line in recipe.ingredients.select_related("ingredient").order_by("id"):
+        quantity = line.quantity
+        # 3.0 -> 3, so the amount box doesn't show "3.0"
+        if quantity is not None and quantity == int(quantity):
+            quantity = int(quantity)
+        current_lines.append({"ingredient": line.ingredient.name, "quantity": quantity})
+
+    form = RecipeForm(request.POST or None, instance=recipe)
+    lines = IngredientLineFormSet(request.POST or None, prefix="lines", initial=current_lines)
+
+    if request.method == "POST" and form.is_valid() and lines.is_valid():
+        with transaction.atomic():
+            form.save()
+            # simplest way to handle added, changed and removed lines -
+            # delete the old ones and save the form's lines in their place
+            recipe.ingredients.all().delete()
+            save_lines(recipe, lines)
+
+        messages.success(request, f"{recipe.name} updated.")
+        return redirect("recipes:detail", pk=recipe.pk)
+
+    names, units = ingredient_choices()
+    return render(request, "recipes/recipe_form.html", {
+        "form": form,
+        "lines": lines,
+        "recipe": recipe,
+        "is_edit": True,
+        "ingredient_names": names,
+        "ingredient_units": units,
+    })
+
+
+@login_required
+@require_POST
+def delete_recipe(request, pk):
+    """Deletes one of the household's custom recipes. POST only, so a link can't delete it."""
+    recipe = get_object_or_404(Recipe, pk=pk, household=get_household(request.user))
+    name = recipe.name
+
+    # its ingredient lines and any saves get deleted with it (on_delete=CASCADE)
+    recipe.delete()
+    messages.success(request, f"{name} deleted.")
+
+    return redirect(reverse("recipes:index") + "?tab=created")
 
 
 def save_lines(recipe, lines):
