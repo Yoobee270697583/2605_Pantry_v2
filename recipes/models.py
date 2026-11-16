@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 # every ingredient is stored in one of these units, so amounts can always be
@@ -134,3 +135,46 @@ class RecipeIngredient(models.Model):
 
     def __str__(self):
         return f"{self.ingredient.name} ({self.recipe.name})"
+
+
+class SavedRecipe(models.Model):
+    """A recipe a household has saved. Shared by everyone in the household, the same as the pantry."""
+
+    # the household that saved it - everyone in the household sees the same saved list
+    household = models.ForeignKey(
+        "households.Household",
+        on_delete=models.CASCADE,
+        related_name="saved_recipes"
+    )
+
+    # the recipe that was saved
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="saves"
+    )
+
+    # who pressed save. SET_NULL so the recipe stays saved if their account is deleted
+    saved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="saved_recipes"
+    )
+
+    # when it was saved
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-saved_at"]
+        constraints = [
+            # a household can only save each recipe once
+            models.UniqueConstraint(
+                fields=["household", "recipe"],
+                name="unique_saved_recipe_per_household",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.recipe.name} ({self.household})"

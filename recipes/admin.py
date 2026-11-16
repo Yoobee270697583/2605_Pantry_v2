@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ingredient, IngredientAlias, Recipe, RecipeIngredient
+from .models import Ingredient, IngredientAlias, Recipe, RecipeIngredient, SavedRecipe
 
 
 # shows a recipe's ingredient lines inside that recipe's admin page
@@ -31,3 +31,9 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ["category", "area", "source"]
     search_fields = ["name"]
     inlines = [RecipeIngredientInline]
+
+
+@admin.register(SavedRecipe)
+class SavedRecipeAdmin(admin.ModelAdmin):
+    list_display = ["recipe", "household", "saved_by", "saved_at"]
+    search_fields = ["recipe__name", "household__name"]
