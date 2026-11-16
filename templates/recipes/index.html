@@ -9,31 +9,36 @@
     <a href="{% url 'recipes:create' %}" class="btn btn-primary">+ Create Recipe</a>
 </div>
 
-<!-- 2 tabs -->
+<!-- 3 tabs - px-2 on phones so all 3 still fit on one line -->
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
-        <a href="{% url 'recipes:index' %}" class="nav-link {% if active_tab != 'saved' %}active{% endif %}">All recipes</a>
+        <a href="{% url 'recipes:index' %}" class="nav-link px-2 px-sm-3 {% if active_tab == 'all' %}active{% endif %}">All recipes</a>
     </li>
     <li class="nav-item">
-        <a href="{% url 'recipes:index' %}?tab=saved" class="nav-link {% if active_tab == 'saved' %}active{% endif %}">
+        <a href="{% url 'recipes:index' %}?tab=saved" class="nav-link px-2 px-sm-3 {% if active_tab == 'saved' %}active{% endif %}">
             Saved <span class="badge rounded-pill text-bg-secondary">{{ saved_ids|length }}</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'recipes:index' %}?tab=created" class="nav-link px-2 px-sm-3 {% if active_tab == 'created' %}active{% endif %}">
+            Created <span class="badge rounded-pill text-bg-secondary">{{ created_count }}</span>
         </a>
     </li>
 </ul>
 
 <p class="text-body-secondary">
-    {{ total }} {% if active_tab == 'saved' %}saved {% endif %}recipe{{ total|pluralize }}
+    {{ total }} {% if active_tab == 'saved' %}saved {% elif active_tab == 'created' %}created {% endif %}recipe{{ total|pluralize }}
     {% if search_query or selected_category or selected_area %}
         {# clearing the search keeps you on the same tab #}
-        found <a href="{% url 'recipes:index' %}{% if active_tab == 'saved' %}?tab=saved{% endif %}" class="ms-2">Clear search</a>
+        found <a href="{% url 'recipes:index' %}{% if active_tab != 'all' %}?tab={{ active_tab }}{% endif %}" class="ms-2">Clear search</a>
     {% endif %}
 </p>
 
 {# GET form so the search ends up in the url and the page links can keep it #}
 <form method="get" class="row g-2 mb-4">
-    {# without this, searching on the saved tab would jump back to all recipes #}
-    {% if active_tab == 'saved' %}
-        <input type="hidden" name="tab" value="saved">
+    {# without this, searching on the saved or created tab would jump back to all recipes #}
+    {% if active_tab != 'all' %}
+        <input type="hidden" name="tab" value="{{ active_tab }}">
     {% endif %}
     <div class="col-12 col-lg-4">
         <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search recipes" aria-label="Search recipes">
@@ -80,6 +85,8 @@
                             <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
                         </h2>
                         {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
+                        {# custom recipes only ever show for their own household, so any recipe with a household is yours #}
+                        {% if recipe.household_id %}<span class="badge border border-primary text-primary">Your recipe</span>{% endif %}
                         {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
                         {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
                     </div>
@@ -111,6 +118,11 @@
     <p class="text-body-secondary">
         Nothing saved yet. Open a recipe and press <strong>Save recipe</strong> to keep it here.
         <a href="{% url 'recipes:index' %}" class="ms-2">Browse all recipes</a>
+    </p>
+{% elif active_tab == 'created' and not created_count %}
+    <p class="text-body-secondary">
+        You haven't created any recipes yet. Press <strong>+ Create Recipe</strong> to add your own, only people in your household can see them.
+        <a href="{% url 'recipes:create' %}" class="ms-2">Create a recipe</a>
     </p>
 {% else %}
     <p class="text-body-secondary">No recipes match your search, try something else.</p>

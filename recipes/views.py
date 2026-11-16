@@ -15,8 +15,12 @@ RECIPES_PER_PAGE = 24
 
 @login_required
 def index(request):
-    """The My Recipes page. Has two tabs: every recipe the household can see, and the ones it has saved. Both have search and category/cuisine filters."""
+    """The My Recipes page. Has three tabs: every recipe the household can see, the ones it has saved, and the ones it has created. All have search and category/cuisine filters."""
     active_tab = request.GET.get("tab", "all")
+    # anything else, like a typo in the url, just shows all recipes
+    if active_tab not in ["all", "saved", "created"]:
+        active_tab = "all"
+
     search_query = request.GET.get("q", "").strip()
     selected_category = request.GET.get("category", "").strip()
     selected_area = request.GET.get("area", "").strip()
@@ -26,6 +30,10 @@ def index(request):
     # ids of every recipe this household has saved, so each card can show a "Saved" badge
     saved_ids = set(SavedRecipe.objects.filter(household=household).values_list("recipe_id", flat=True))
 
+    # how many recipes the household has made, for the number on the Created tab
+    # "custom_recipes" is the related_name on Recipe.household
+    created_count = household.custom_recipes.count()
+
     # TheMealDB recipes plus this household's own custom ones, never another household's
     recipes = visible_recipes(household)
 
@@ -33,6 +41,10 @@ def index(request):
     # "saves" is the related_name on SavedRecipe.recipe
     if active_tab == "saved":
         recipes = recipes.filter(saves__household=household)
+
+    # the created tab only shows this household's own custom recipes
+    elif active_tab == "created":
+        recipes = recipes.filter(household=household)
 
     if search_query:
         recipes = recipes.filter(name__icontains=search_query)
@@ -66,6 +78,7 @@ def index(request):
     return render(request, "recipes/index.html", {
         "active_tab": active_tab,
         "saved_ids": saved_ids,
+        "created_count": created_count,
         "page": page,
         "total": paginator.count,
         "search_query": search_query,
