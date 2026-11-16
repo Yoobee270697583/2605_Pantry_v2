@@ -7,4 +7,6 @@ app_name = "recipes"
 urlpatterns = [
     path("", views.index, name="index"),
     path("<int:pk>/", views.detail, name="detail"),
+    path("<int:pk>/save/", views.save_recipe, name="save"),
+    path("<int:pk>/unsave/", views.unsave_recipe, name="unsave"),
 ]
