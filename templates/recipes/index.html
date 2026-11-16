@@ -4,15 +4,33 @@
 
 {% block content %}
 <h1>Recipes</h1>
+
+<!-- 2 tabs -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a href="{% url 'recipes:index' %}" class="nav-link {% if active_tab != 'saved' %}active{% endif %}">All recipes</a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'recipes:index' %}?tab=saved" class="nav-link {% if active_tab == 'saved' %}active{% endif %}">
+            Saved <span class="badge rounded-pill text-bg-secondary">{{ saved_ids|length }}</span>
+        </a>
+    </li>
+</ul>
+
 <p class="text-body-secondary">
-    {{ total }} recipe{{ total|pluralize }}
+    {{ total }} {% if active_tab == 'saved' %}saved {% endif %}recipe{{ total|pluralize }}
     {% if search_query or selected_category or selected_area %}
-        found <a href="{% url 'recipes:index' %}" class="ms-2">Clear search</a>
+        {# clearing the search keeps you on the same tab #}
+        found <a href="{% url 'recipes:index' %}{% if active_tab == 'saved' %}?tab=saved{% endif %}" class="ms-2">Clear search</a>
     {% endif %}
 </p>
 
 {# GET form so the search ends up in the url and the page links can keep it #}
 <form method="get" class="row g-2 mb-4">
+    {# without this, searching on the saved tab would jump back to all recipes #}
+    {% if active_tab == 'saved' %}
+        <input type="hidden" name="tab" value="saved">
+    {% endif %}
     <div class="col-12 col-lg-4">
         <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search recipes" aria-label="Search recipes">
     </div>
@@ -50,6 +68,7 @@
                             {# stretched-link makes the whole card clickable #}
                             <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
                         </h2>
+                        {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
                         {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
                         {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
                     </div>
@@ -77,6 +96,11 @@
             </ul>
         </nav>
     {% endif %}
+{% elif active_tab == 'saved' and not saved_ids %}
+    <p class="text-body-secondary">
+        Nothing saved yet. Open a recipe and press <strong>Save recipe</strong> to keep it here.
+        <a href="{% url 'recipes:index' %}" class="ms-2">Browse all recipes</a>
+    </p>
 {% else %}
     <p class="text-body-secondary">No recipes match your search, try something else.</p>
 {% endif %}
