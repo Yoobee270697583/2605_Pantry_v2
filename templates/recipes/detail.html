@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.name }} — Pantry{% endblock %}
+
+{% block content %}
+<a href="{% url 'recipes:index' %}" class="link-secondary text-decoration-none">&larr; Back to recipes</a>
+
+<div class="row g-4 mt-1">
+    <div class="col-md-5">
+        <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="img-fluid rounded shadow-sm w-100">
+    </div>
+
+    <div class="col-md-7">
+        <h1>{{ recipe.name }}</h1>
+        <div class="mb-4">
+            {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
+            {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
+        </div>
+
+        <h2 class="h5">Ingredients</h2>
+        <ul class="list-group">
+            {% for line in ingredients %}
+                <li class="list-group-item d-flex align-items-center gap-3">
+                    <img src="{{ line.ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0" loading="lazy">
+                    <span class="flex-grow-1">{{ line.ingredient.name }}</span>
+                    <span class="text-end">
+                        {{ line.measure_text }}
+                        {% if line.is_tracked %}
+                            {# the amount the pantry will use, after converting to the ingredient's unit #}
+                            <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
+                        {% else %}
+                            <small class="d-block text-body-secondary">not tracked</small>
+                        {% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="{% if youtube_embed_url %}col-lg-7{% else %}col-12{% endif %}">
+        <h2 class="h5">Instructions</h2>
+        {{ recipe.instructions|linebreaks }}
+    </div>
+
+    {% if youtube_embed_url %}
+        <div class="col-lg-5">
+            <h2 class="h5">Video</h2>
+            <div class="ratio ratio-16x9">
+                {# referrerpolicy is needed or youtube refuses to play embedded videos #}
+                <iframe src="{{ youtube_embed_url }}" title="How to make {{ recipe.name }}" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy" class="rounded"></iframe>
+            </div>
+            <a href="{{ recipe.youtube_url }}" target="_blank" rel="noopener" class="d-inline-block mt-2">Watch on YouTube</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
