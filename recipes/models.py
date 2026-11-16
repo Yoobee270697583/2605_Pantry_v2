@@ -69,7 +69,7 @@ class IngredientAlias(models.Model):
 
 
 class Recipe(models.Model):
-    """A recipe imported from TheMealDB. Shared by every user, instead of each user getting their own copy like in V1."""
+    """A recipe from TheMealDB, or a custom one a household made. TheMealDB recipes are shared by every user, instead of each user getting their own copy like in V1."""
 
     # idMeal from TheMealDB - empty if the recipe didn't come from there
     mealdb_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
@@ -94,6 +94,25 @@ class Recipe(models.Model):
 
     # where the recipe came from - TheMealDB or Custom
     source = models.CharField(max_length=50, default="TheMealDB")
+
+    # the household that made it - empty for TheMealDB recipes, which everyone can see.
+    # a custom recipe is only shown to this household. deleting the household deletes its recipes
+    household = models.ForeignKey(
+        "households.Household",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="custom_recipes"
+    )
+
+    # who in the household made it. SET_NULL so the recipe stays if their account is deleted
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_recipes"
+    )
 
     # date the recipe was added
     created_at = models.DateTimeField(auto_now_add=True)
