@@ -78,6 +78,8 @@ def index(request):
 
     return render(request, "recipes/index.html", {
         "active_tab": active_tab,
+        # so each card can tell if a custom recipe is this household's own
+        "household": household,
         "saved_ids": saved_ids,
         "created_count": created_count,
         "page": page,
@@ -118,6 +120,8 @@ def detail(request, pk):
 
     return render(request, "recipes/detail.html", {
         "recipe": recipe,
+        # so the page only shows edit and delete if it's this household's recipe
+        "household": household,
         "ingredients": ingredients,
         "youtube_embed_url": youtube_embed_url,
         "saved": saved,
