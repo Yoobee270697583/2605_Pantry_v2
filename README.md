@@ -72,11 +72,11 @@ python manage.py import_recipes
 ```
 
 - `import_ingredients` loads TheMealDB's ingredient list
-- `merge_ingredients` merges ingredients TheMealDB lists more than once (e.g. Onions and Yellow Onion into Onion) and saves the other names as aliases
+- `merge_ingredients` merges ingredients TheMealDB lists more than once (e.g. Onions and Yellow Onion into Onion) and saves the other names as aliases, plus a few spellings only some recipes use (e.g. Gruyere)
 - `import_usda_portions` adds USDA gram weights for common ingredients, so amounts like "1 cup flour" can be converted. The `DEMO_KEY` from `.env.example` works for this
-- `import_recipes` loads the recipes, skipping any with amounts it can't convert
+- `import_recipes` loads TheMealDB's recipes. Amounts it can't convert into the ingredient's unit (like "1 bunch") still show on the recipe, they just aren't tracked against the pantry
 
-They're all safe to run again. If your database was set up before `merge_ingredients` existed, just run `migrate`, `merge_ingredients` and `import_recipes`.
+They're all safe to run again. If you already have a database set up, just run `migrate`, `merge_ingredients` and `import_recipes` to pick up new ingredient names and recipes.
 
 ### 6. Run the application
 
