@@ -34,7 +34,7 @@
             <li class="nav-item"><a href="{% url 'kitchen:index' %}" class="nav-link {% if app == 'kitchen' %}active{% endif %}">My Kitchen</a></li>        {# kitchen:index #}
             <li class="nav-item"><a href="{% url 'pantry:index' %}" class="nav-link {% if app == 'pantry' %}active{% endif %}">My Pantry</a></li>
             <li class="nav-item"><a href="{% url 'recipes:index' %}" class="nav-link {% if app == 'recipes' %}active{% endif %}">My Recipes</a></li>        {# recipes:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li>                     {# suggestions:index #}
+            <li class="nav-item"><a href="{% url 'suggestions:index' %}" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li>                     {# suggestions:index #}
             <li class="nav-item"><a href="#" class="nav-link {% if app == 'planned' %}active{% endif %}">Planned Meals</a></li>                             {# planned:index #}
             <li class="nav-item"><a href="#" class="nav-link {% if app == 'cooked' %}active{% endif %}">Cooked Meals</a></li>                               {# cooked:index #}
             <li class="nav-item"><a href="#" class="nav-link {% if app == 'shopping' %}active{% endif %}">Shopping Lists</a></li>                           {# shopping:index #}

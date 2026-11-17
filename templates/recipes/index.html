@@ -6,7 +6,11 @@
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <h1 class="mb-0">Recipes</h1>
-    <a href="{% url 'recipes:create' %}" class="btn btn-primary">+ Create Recipe</a>
+    <div class="d-flex flex-wrap gap-2">
+        {# the phone nav only has "Recipes", so this is how phones get to Suggested Recipes #}
+        <a href="{% url 'suggestions:index' %}" class="btn btn-outline-primary">What can I cook?</a>
+        <a href="{% url 'recipes:create' %}" class="btn btn-primary">+ Create Recipe</a>
+    </div>
 </div>
 
 <!-- 3 tabs - px-2 on phones so all 3 still fit on one line -->
