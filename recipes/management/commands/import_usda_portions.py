@@ -5,7 +5,8 @@ from recipes.usda_helper import get_foods, get_portion_weights
 # run with: python manage.py import_usda_portions
 # saves USDA gram weights (per cup, tbsp and each) for the ingredients below,
 # so import_recipes can convert things like "1 cup flour" when flour is stored
-# in grams. run import_recipes again afterwards to pick up the extra recipes
+# in grams. run it before import_recipes - recipes that are already imported
+# don't get converted again, so their amounts would stay not tracked
 
 # hand-picked USDA FoodData Central foods for the ingredients that block the
 # most recipes. all SR Legacy foods since those have household portions.
@@ -125,5 +126,5 @@ class Command(BaseCommand):
             updated += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f"saved USDA weights for {updated} ingredients - run import_recipes again to pick up the recipes they unlock"
+            f"saved USDA weights for {updated} ingredients"
         ))

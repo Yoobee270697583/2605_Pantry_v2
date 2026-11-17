@@ -7,16 +7,17 @@ from recipes.unit_helper import parse_measure, to_base, convert_to_ingredient_un
 
 # run with: python manage.py import_recipes
 # run import_ingredients and merge_ingredients first so the Ingredient table is filled.
-# pulls every recipe from TheMealDB and only saves the ones where every
-# ingredient line converts cleanly into that ingredient's unit (g, ml or each).
-# lines like "pinch" or "to taste" still get saved, just not tracked.
+# pulls every recipe from TheMealDB and converts each ingredient line into that
+# ingredient's unit (g, ml or each). lines we can't convert, like "pinch", "1 bunch"
+# or "1 cup" of something we only have in grams, still get saved, just not tracked.
+# a recipe only gets skipped if it uses an ingredient that isn't in our list.
 # safe to run again - recipes we already have get skipped
 
 LETTERS = "abcdefghijklmnopqrstuvwxyz"
 
 
 class Command(BaseCommand):
-    help = "Imports recipes from TheMealDB, skipping any with amounts we can't convert"
+    help = "Imports recipes from TheMealDB, saving amounts we can't convert as not tracked"
 
     def handle(self, *args, **options):
         # lowercase name -> Ingredient, so "salt" and "Salt" both match
@@ -127,8 +128,8 @@ class Command(BaseCommand):
     def build_lines(self, meal, ingredients):
         """Turns a meal's ingredient list into lines ready to save.
 
-        Returns (lines, problem). problem is None if the whole recipe is
-        fine, otherwise it says why the recipe has to be skipped.
+        Returns (lines, problem). problem is None if the recipe is fine,
+        otherwise it says why the recipe has to be skipped.
         """
         lines = []
 
@@ -139,29 +140,29 @@ class Command(BaseCommand):
 
             quantity, unit = parse_measure(item["measure"])
 
-            if unit is None:
-                return [], "has an amount we can't read (like '1 bunch')"
+            # unit is "untracked" for things like "pinch" or "to taste",
+            # and None for amounts we can't read like "1 bunch"
+            converted = None
+            if unit is not None and unit != "untracked":
+                # None if it's in a different unit to the ingredient and there's no USDA weight for it
+                converted = convert_to_ingredient_unit(quantity, unit, ingredient)
 
-            # e.g. "pinch" or "to taste" - keep it for the recipe page but don't track it
-            if unit == "untracked":
+            # if it couldn't be converted, keep the line on the recipe page with its
+            # original amount but don't track it, instead of skipping the whole recipe
+            if converted is None:
                 lines.append({
                     "ingredient": ingredient,
                     "quantity": None,
                     "is_tracked": False,
                     "measure_text": item["measure"][:100],
                 })
-                continue
-
-            converted = convert_to_ingredient_unit(quantity, unit, ingredient)
-            if converted is None:
-                return [], "has an amount in a different unit to the ingredient (needs USDA weights)"
-
-            lines.append({
-                "ingredient": ingredient,
-                "quantity": converted,
-                "is_tracked": True,
-                "measure_text": item["measure"][:100],
-            })
+            else:
+                lines.append({
+                    "ingredient": ingredient,
+                    "quantity": converted,
+                    "is_tracked": True,
+                    "measure_text": item["measure"][:100],
+                })
 
         return lines, None
 

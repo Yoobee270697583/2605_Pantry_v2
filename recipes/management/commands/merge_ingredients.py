@@ -110,6 +110,15 @@ INGREDIENT_ALIASES = {
     "Oil": "Vegetable Oil",
     "Extra Virgin Olive Oil": "Olive Oil",
     "Buns": "Bun",
+
+    # names only some recipes use - they aren't in TheMealDB's ingredient list
+    # at all, so import_recipes skips the recipes that use them unless they're here
+    "Gruyere": "Gruyère",
+    "Gruyere cheese": "Gruyère",
+    "Carrot": "Carrots",
+    "Tomato Purée": "Tomato Puree",
+    # the only recipe that says "clove" means ground clove ("½ tsp ground")
+    "Clove": "Ground Clove",
 }
 
 
@@ -138,7 +147,7 @@ class Command(BaseCommand):
 
             duplicate = Ingredient.objects.filter(name__iexact=duplicate_name).first()
             if duplicate is None:
-                # already merged on an earlier run
+                # already merged on an earlier run, or it's one of the names only recipes use
                 continue
 
             try:
