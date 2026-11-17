@@ -15,8 +15,8 @@ from .models import SwapTip
 # things nearly every kitchen has, so a recipe never counts them as missing
 STAPLES = ["Water", "Salt", "Black Pepper"]
 
-# a recipe missing this many ingredients or fewer shows under "Almost there".
-# the page says "1 or 2", so change that wording too if this changes
+# a recipe missing this many ingredients or fewer shows under "Almost there", and can get AI swaps.
+# the suggestions and swaps pages say "1 or 2", so change that wording too if this changes
 MAX_MISSING = 2
 
 # how many times Claude can be asked for swap tips in 24 hours - by one household, and by
@@ -89,6 +89,16 @@ def get_suggestions(household, pantry_ids):
     return suggestions
 
 
+def get_missing(recipe, pantry_ids):
+    """The Ingredients one recipe needs that aren't in the pantry, A-Z. Staples never count,
+    the same as in get_suggestions."""
+    staple_ids = set(Ingredient.objects.filter(name__in=STAPLES).values_list("id", flat=True))
+    # a set, so an ingredient the recipe lists twice only counts once
+    needed_ids = set(recipe.ingredients.values_list("ingredient_id", flat=True))
+    missing_ids = needed_ids - pantry_ids - staple_ids
+    return list(Ingredient.objects.filter(id__in=missing_ids).order_by("name"))
+
+
 def get_pantry_key(pantry_ids, missing):
     """A fingerprint of what's in the pantry and what a recipe is missing, so a saved AI answer
     is only reused while both are still the same."""
@@ -96,6 +106,16 @@ def get_pantry_key(pantry_ids, missing):
     missing_part = ",".join(str(ingredient.id) for ingredient in sorted(missing, key=lambda ingredient: ingredient.id))
     # sha256 turns any amount of text into 64 characters, so it always fits in SwapTip.pantry_key
     return hashlib.sha256(f"{pantry_part}|{missing_part}".encode()).hexdigest()
+
+
+def get_saved_swaps(household, recipe, missing, pantry_ids):
+    """The household's saved AI answer for this recipe and pantry, or None if it hasn't asked yet
+    (or its pantry has changed since)."""
+    pantry_key = get_pantry_key(pantry_ids, missing)
+    saved = SwapTip.objects.filter(household=household, recipe=recipe, pantry_key=pantry_key).first()
+    if saved is None:
+        return None
+    return saved.swaps
 
 
 def get_swap_tips(household, user, recipe, missing, pantry_ids):
@@ -113,12 +133,11 @@ def get_swap_tips(household, user, recipe, missing, pantry_ids):
     if not missing:
         return [], None
 
-    pantry_key = get_pantry_key(pantry_ids, missing)
-
-    # asked before with the same pantry - reuse that answer, it's free and instant
-    saved = SwapTip.objects.filter(household=household, recipe=recipe, pantry_key=pantry_key).first()
-    if saved:
-        return saved.swaps, None
+    # asked before with the same pantry - reuse that answer, it's free and instant.
+    # "is not None" because an empty list is still an answer (Claude had no ideas)
+    saved_swaps = get_saved_swaps(household, recipe, missing, pantry_ids)
+    if saved_swaps is not None:
+        return saved_swaps, None
 
     # the last 24 hours instead of "today", because the server runs on UTC time,
     # so a new day would start around midday in NZ
@@ -138,7 +157,7 @@ def get_swap_tips(household, user, recipe, missing, pantry_ids):
     SwapTip.objects.get_or_create(
         household=household,
         recipe=recipe,
-        pantry_key=pantry_key,
+        pantry_key=get_pantry_key(pantry_ids, missing),
         defaults={"swaps": swaps, "asked_by": user},
     )
     return swaps, None

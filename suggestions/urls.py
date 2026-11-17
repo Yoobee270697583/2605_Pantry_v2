@@ -8,4 +8,5 @@ app_name = "suggestions"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("<int:pk>/swaps/", views.swaps, name="swaps"),
 ]
