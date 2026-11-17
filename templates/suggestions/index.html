@@ -4,9 +4,27 @@
 {% block title %}Suggested Recipes — Pantry{% endblock %}
 
 {% block content %}
-<div class="mb-3">
-    <h1 class="mb-0">Suggested Recipes</h1>
-    <p class="text-body-secondary mt-1 mb-0">Recipes you can make with what's in your pantry.</p>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+        <h1 class="mb-0">Suggested Recipes</h1>
+        <p class="text-body-secondary mt-1 mb-0">Recipes you can make with what's in your pantry.</p>
+    </div>
+    {% if has_pantry %}
+        <div class="d-flex flex-wrap gap-2">
+            {# V1 only ever suggested saved recipes. pressing it again turns it back off #}
+            {% if saved_only %}
+                <a href="{% url 'suggestions:index' %}{% if active_tab == 'almost' %}?tab=almost{% endif %}" class="btn btn-primary">✓ Saved only</a>
+            {% else %}
+                <a href="{% url 'suggestions:index' %}?{% if active_tab == 'almost' %}tab=almost&{% endif %}saved=1" class="btn btn-outline-primary">Saved only</a>
+            {% endif %}
+            {# picks one recipe from this tab at random, like V1. only worth it if there's more than one #}
+            {% if total > 1 %}
+                <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}surprise=1{% if picked %}&last={{ picked.recipe.pk }}{% endif %}" class="btn btn-outline-primary">
+                    {% if picked %}Pick another{% else %}Surprise me{% endif %}
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
 </div>
 
 {% if not has_pantry %}
@@ -16,15 +34,15 @@
         <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
     </p>
 {% else %}
-    <!-- 2 tabs -->
+    <!-- 2 tabs - they keep the saved only filter -->
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <a href="{% url 'suggestions:index' %}" class="nav-link {% if active_tab == 'ready' %}active{% endif %}">
+            <a href="{% url 'suggestions:index' %}{% if saved_only %}?saved=1{% endif %}" class="nav-link {% if active_tab == 'ready' %}active{% endif %}">
                 Ready to cook <span class="badge rounded-pill text-bg-secondary">{{ ready_count }}</span>
             </a>
         </li>
         <li class="nav-item">
-            <a href="{% url 'suggestions:index' %}?tab=almost" class="nav-link {% if active_tab == 'almost' %}active{% endif %}">
+            <a href="{% url 'suggestions:index' %}?tab=almost{% if saved_only %}&saved=1{% endif %}" class="nav-link {% if active_tab == 'almost' %}active{% endif %}">
                 Almost there <span class="badge rounded-pill text-bg-secondary">{{ almost_count }}</span>
             </a>
         </li>
@@ -32,10 +50,13 @@
 
     {% if page.object_list %}
         <p class="text-body-secondary">
-            {% if active_tab == 'almost' %}
-                {{ total }} recipe{{ total|pluralize }} you're only 1 or 2 ingredients away from
+            {% if picked %}
+                Picked at random from {{ total }} {% if saved_only %}saved {% endif %}recipe{{ total|pluralize }}.
+                <a href="{% url 'suggestions:index' %}{% if filter_params %}?{{ filter_params }}{% endif %}" class="ms-2">Show all</a>
+            {% elif active_tab == 'almost' %}
+                {{ total }} {% if saved_only %}saved {% endif %}recipe{{ total|pluralize }} you're only 1 or 2 ingredients away from
             {% else %}
-                {{ total }} recipe{{ total|pluralize }} you can make right now
+                {{ total }} {% if saved_only %}saved {% endif %}recipe{{ total|pluralize }} you can make right now
             {% endif %}
         </p>
 
@@ -67,6 +88,7 @@
                                         {% for ingredient in suggestion.missing %}{{ ingredient.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                                     </p>
                                 {% endif %}
+                                {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
                                 <span class="badge border border-primary text-primary">Uses {{ suggestion.using }} pantry item{{ suggestion.using|pluralize }}</span>
                                 {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
                                 {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
@@ -96,16 +118,22 @@
                 </ul>
             </nav>
         {% endif %}
+    {% elif saved_only and not saved_ids %}
+        {# the same message as the Saved tab on My Recipes #}
+        <p class="text-body-secondary">
+            Nothing saved yet. Open a recipe and press <strong>Save recipe</strong> to keep it here.
+            <a href="{% url 'suggestions:index' %}{% if active_tab == 'almost' %}?tab=almost{% endif %}" class="ms-2">Show all suggestions</a>
+        </p>
     {% elif active_tab == 'almost' %}
         <p class="text-body-secondary">
-            No recipes are only 1 or 2 ingredients away yet. Add more items to your pantry to see some here.
+            No {% if saved_only %}saved {% endif %}recipes are only 1 or 2 ingredients away yet. Add more items to your pantry to see some here.
             <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
         </p>
     {% else %}
         <p class="text-body-secondary">
-            Nothing can be made with just what's in your pantry yet.
+            Nothing {% if saved_only %}you've saved {% endif %}can be made with just what's in your pantry yet.
             {% if almost_count %}
-                <a href="{% url 'suggestions:index' %}?tab=almost" class="ms-2">See what you're almost there with</a>
+                <a href="{% url 'suggestions:index' %}?tab=almost{% if saved_only %}&saved=1{% endif %}" class="ms-2">See what you're almost there with</a>
             {% else %}
                 <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
             {% endif %}
