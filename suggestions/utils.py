@@ -9,6 +9,10 @@ from recipes.utils import visible_recipes
 # things nearly every kitchen has, so a recipe never counts them as missing
 STAPLES = ["Water", "Salt", "Black Pepper"]
 
+# a recipe missing this many ingredients or fewer shows under "Almost there".
+# the page says "1 or 2", so change that wording too if this changes
+MAX_MISSING = 2
+
 
 def get_pantry_ids(household):
     """Returns the ids of the ingredients the household has right now.

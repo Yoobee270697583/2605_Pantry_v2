@@ -15,63 +15,101 @@
         Add some items to your pantry first to get recipe suggestions. Items that have run out or are past their expiry date don't count.
         <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
     </p>
-{% elif page.object_list %}
-    <p class="text-body-secondary">{{ total }} recipe{{ total|pluralize }} you can make right now</p>
+{% else %}
+    <!-- 2 tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a href="{% url 'suggestions:index' %}" class="nav-link {% if active_tab == 'ready' %}active{% endif %}">
+                Ready to cook <span class="badge rounded-pill text-bg-secondary">{{ ready_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'suggestions:index' %}?tab=almost" class="nav-link {% if active_tab == 'almost' %}active{% endif %}">
+                Almost there <span class="badge rounded-pill text-bg-secondary">{{ almost_count }}</span>
+            </a>
+        </li>
+    </ul>
 
-    {# the same cards as My Recipes #}
-    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3">
-        {% for suggestion in page %}
-            {% with recipe=suggestion.recipe %}
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        <div class="ratio ratio-4x3">
-                            {% if recipe.image_url %}
-                                <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="card-img-top object-fit-cover" loading="lazy">
-                            {% else %}
-                                {# custom recipes don't need a photo, so show the Pantry icon instead #}
-                                <div class="card-img-top bg-body-tertiary d-flex align-items-center justify-content-center">
-                                    <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="64" class="opacity-50">
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="card-body">
-                            <h2 class="card-title h6 mb-2">
-                                {# stretched-link makes the whole card clickable #}
-                                <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
-                            </h2>
-                            <span class="badge border border-primary text-primary">Uses {{ suggestion.using }} pantry item{{ suggestion.using|pluralize }}</span>
-                            {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
-                            {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
+    {% if page.object_list %}
+        <p class="text-body-secondary">
+            {% if active_tab == 'almost' %}
+                {{ total }} recipe{{ total|pluralize }} you're only 1 or 2 ingredients away from
+            {% else %}
+                {{ total }} recipe{{ total|pluralize }} you can make right now
+            {% endif %}
+        </p>
+
+        {# the same cards as My Recipes #}
+        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3">
+            {% for suggestion in page %}
+                {% with recipe=suggestion.recipe %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <div class="ratio ratio-4x3">
+                                {% if recipe.image_url %}
+                                    <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="card-img-top object-fit-cover" loading="lazy">
+                                {% else %}
+                                    {# custom recipes don't need a photo, so show the Pantry icon instead #}
+                                    <div class="card-img-top bg-body-tertiary d-flex align-items-center justify-content-center">
+                                        <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="64" class="opacity-50">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h2 class="card-title h6 mb-2">
+                                    {# stretched-link makes the whole card clickable #}
+                                    <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
+                                </h2>
+                                {% if suggestion.missing %}
+                                    {# what to buy (or swap) to make it #}
+                                    <p class="small mb-2">
+                                        <span class="text-danger fw-semibold">Missing:</span>
+                                        {% for ingredient in suggestion.missing %}{{ ingredient.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                    </p>
+                                {% endif %}
+                                <span class="badge border border-primary text-primary">Uses {{ suggestion.using }} pantry item{{ suggestion.using|pluralize }}</span>
+                                {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
+                                {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endwith %}
-        {% endfor %}
-    </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
 
-    {% if page.has_other_pages %}
-        <nav aria-label="Suggestion pages" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% if page.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">Previous</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
-                {% endif %}
+        {% if page.has_other_pages %}
+            <nav aria-label="Suggestion pages" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page.previous_page_number }}">Previous</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
 
-                <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+                    <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
 
-                {% if page.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">Next</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Next</span></li>
-                {% endif %}
-            </ul>
-        </nav>
+                    {% if page.has_next %}
+                        <li class="page-item"><a class="page-link" href="?{% if filter_params %}{{ filter_params }}&{% endif %}page={{ page.next_page_number }}">Next</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% elif active_tab == 'almost' %}
+        <p class="text-body-secondary">
+            No recipes are only 1 or 2 ingredients away yet. Add more items to your pantry to see some here.
+            <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
+        </p>
+    {% else %}
+        <p class="text-body-secondary">
+            Nothing can be made with just what's in your pantry yet.
+            {% if almost_count %}
+                <a href="{% url 'suggestions:index' %}?tab=almost" class="ms-2">See what you're almost there with</a>
+            {% else %}
+                <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
+            {% endif %}
+        </p>
     {% endif %}
-{% else %}
-    <p class="text-body-secondary">
-        Nothing can be made with just what's in your pantry yet. Add more items to see suggestions here.
-        <a href="{% url 'pantry:index' %}?tab=ingredients" class="ms-2">Add pantry items</a>
-    </p>
 {% endif %}
 {% endblock %}
