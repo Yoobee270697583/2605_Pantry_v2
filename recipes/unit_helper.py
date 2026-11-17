@@ -7,7 +7,7 @@ import re
 # "to taste". these helpers turn that text into a number + unit, then
 # convert it into the one unit the ingredient is stored in (g, ml or each)
 # so every recipe line lines up with the pantry. anything we can't convert
-# cleanly comes back as None so the import can skip that recipe.
+# cleanly comes back as None so the import can save that line as not tracked.
 
 # tried in order: mixed number ("1 1/2 cups"), fraction ("1/2 cup"),
 # then plain decimal/integer ("400g", "2 cups")
