@@ -27,7 +27,8 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ["name", "category", "area", "source"]
+    # household is empty for TheMealDB recipes
+    list_display = ["name", "category", "area", "source", "household"]
     list_filter = ["category", "area", "source"]
     search_fields = ["name"]
     inlines = [RecipeIngredientInline]

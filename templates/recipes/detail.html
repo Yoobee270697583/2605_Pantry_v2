@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ recipe.name }} — Pantry{% endblock %}
 
@@ -7,7 +8,16 @@
 
 <div class="row g-4 mt-1">
     <div class="col-md-5">
-        <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="img-fluid rounded shadow-sm w-100">
+        {% if recipe.image_url %}
+            <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="img-fluid rounded shadow-sm w-100">
+        {% else %}
+            {# custom recipes don't need a photo, so show the Pantry icon instead #}
+            <div class="ratio ratio-4x3 rounded shadow-sm bg-body-tertiary">
+                <div class="d-flex align-items-center justify-content-center">
+                    <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="120" class="opacity-50">
+                </div>
+            </div>
+        {% endif %}
     </div>
 
     <div class="col-md-7">
@@ -16,6 +26,29 @@
             {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
             {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
         </div>
+
+        {# custom recipes belong to the household, so anyone in it can edit or delete them #}
+        {# household_id instead of household, so it doesn't need another query #}
+        {% if recipe.household_id %}
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <a href="{% url 'recipes:edit' recipe.pk %}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                {# delete has to be a POST form, so it can't be triggered by just visiting a link #}
+                <form method="post" action="{% url 'recipes:delete' recipe.pk %}" onsubmit="return confirm('Delete this recipe? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                </form>
+                <small class="text-body-secondary ms-1">
+                    {% if recipe.created_by == user %}
+                        Created by you
+                    {% elif recipe.created_by %}
+                        Created by {{ recipe.created_by.first_name|default:recipe.created_by.username }}
+                    {% else %}
+                        {# created_by is empty when that person has deleted their account #}
+                        Created by someone in your household
+                    {% endif %}
+                </small>
+            </div>
+        {% endif %}
 
         {# saves belong to the household, so anyone in it can save or remove a recipe #}
         {% if saved %}
@@ -47,12 +80,19 @@
                     <img src="{{ line.ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0" loading="lazy">
                     <span class="flex-grow-1">{{ line.ingredient.name }}</span>
                     <span class="text-end">
-                        {{ line.measure_text }}
-                        {% if line.is_tracked %}
-                            {# the amount the pantry will use, after converting to the ingredient's unit #}
-                            <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
+                        {% if line.measure_text %}
+                            {{ line.measure_text }}
+                            {% if line.is_tracked %}
+                                {# the amount the pantry will use, after converting to the ingredient's unit #}
+                                <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
+                            {% else %}
+                                <small class="d-block text-body-secondary">not tracked</small>
+                            {% endif %}
+                        {% elif line.is_tracked %}
+                            {# custom recipes have no measure_text, their amount is already in the ingredient's unit #}
+                            {{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}
                         {% else %}
-                            <small class="d-block text-body-secondary">not tracked</small>
+                            <small class="text-body-secondary">not tracked</small>
                         {% endif %}
                     </span>
                 </li>
