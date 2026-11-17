@@ -95,8 +95,8 @@ class Recipe(models.Model):
     # where the recipe came from - TheMealDB or Custom
     source = models.CharField(max_length=50, default="TheMealDB")
 
-    # the household that made it - empty for TheMealDB recipes, which everyone can see.
-    # a custom recipe is only shown to this household. deleting the household deletes its recipes
+    # the household that made it - empty for TheMealDB recipes. everyone can see every
+    # recipe, but only this household can edit or delete it. deleting the household deletes its recipes
     household = models.ForeignKey(
         "households.Household",
         on_delete=models.CASCADE,

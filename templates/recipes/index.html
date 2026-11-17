@@ -85,8 +85,8 @@
                             <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
                         </h2>
                         {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
-                        {# custom recipes only ever show for their own household, so any recipe with a household is yours #}
-                        {% if recipe.household_id %}<span class="badge border border-primary text-primary">Your recipe</span>{% endif %}
+                        {# only the household that made a custom recipe gets this badge #}
+                        {% if recipe.household_id == household.id %}<span class="badge border border-primary text-primary">Your recipe</span>{% endif %}
                         {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
                         {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
                     </div>
@@ -121,7 +121,7 @@
     </p>
 {% elif active_tab == 'created' and not created_count %}
     <p class="text-body-secondary">
-        You haven't created any recipes yet. Press <strong>+ Create Recipe</strong> to add your own, only people in your household can see them.
+        You haven't created any recipes yet. Press <strong>+ Create Recipe</strong> to add your own.
         <a href="{% url 'recipes:create' %}" class="ms-2">Create a recipe</a>
     </p>
 {% else %}

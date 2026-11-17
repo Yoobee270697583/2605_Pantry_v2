@@ -16,7 +16,7 @@ RECIPES_PER_PAGE = 24
 
 @login_required
 def index(request):
-    """The My Recipes page. Has three tabs: every recipe the household can see, the ones it has saved, and the ones it has created. All have search and category/cuisine filters."""
+    """The My Recipes page. Has three tabs: every recipe, the ones the household has saved, and the ones it has created. All have search and category/cuisine filters."""
     active_tab = request.GET.get("tab", "all")
     # anything else, like a typo in the url, just shows all recipes
     if active_tab not in ["all", "saved", "created"]:
@@ -35,7 +35,7 @@ def index(request):
     # "custom_recipes" is the related_name on Recipe.household
     created_count = household.custom_recipes.count()
 
-    # TheMealDB recipes plus this household's own custom ones, never another household's
+    # TheMealDB recipes plus everyone's custom ones
     recipes = visible_recipes(household)
 
     # the saved tab only shows this household's saved recipes
@@ -78,6 +78,8 @@ def index(request):
 
     return render(request, "recipes/index.html", {
         "active_tab": active_tab,
+        # so each card can tell if a custom recipe is this household's own
+        "household": household,
         "saved_ids": saved_ids,
         "created_count": created_count,
         "page": page,
@@ -96,7 +98,7 @@ def detail(request, pk):
     """Shows one recipe - its ingredients, instructions and youtube video."""
     household = get_household(request.user)
 
-    # another household's custom recipe is a 404, the same as a recipe that doesn't exist.
+    # anyone can open any recipe, including other households' custom ones.
     # select_related gets who created it (for "Created by") in the same query
     recipe = get_object_or_404(visible_recipes(household).select_related("created_by"), pk=pk)
 
@@ -118,6 +120,8 @@ def detail(request, pk):
 
     return render(request, "recipes/detail.html", {
         "recipe": recipe,
+        # so the page only shows edit and delete if it's this household's recipe
+        "household": household,
         "ingredients": ingredients,
         "youtube_embed_url": youtube_embed_url,
         "saved": saved,
@@ -162,7 +166,7 @@ def unsave_recipe(request, pk):
 
 @login_required
 def create_recipe(request):
-    """The Create Recipe page. A custom recipe belongs to the household, so only people in it can see it."""
+    """The Create Recipe page. Everyone can see a custom recipe, but only the household that made it can edit or delete it."""
     form = RecipeForm(request.POST or None)
     # the prefix keeps the line fields apart from the recipe's, e.g. "lines-0-ingredient"
     lines = IngredientLineFormSet(request.POST or None, prefix="lines")

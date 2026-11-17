@@ -11,6 +11,7 @@
         <a href="{% url 'recipes:index' %}" class="link-secondary text-decoration-none">&larr; Back to recipes</a>
     {% endif %}
     <h1 class="mt-2 mb-0">{% if is_edit %}Edit Recipe{% else %}Create a Recipe{% endif %}</h1>
+    <p class="text-body-secondary mt-1 mb-0">Everyone can see your recipes, but only your household can edit or delete them.</p>
 </div>
 
 <form method="post" novalidate>

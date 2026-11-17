@@ -1,17 +1,18 @@
-from django.db.models import Q
-
 from .models import Ingredient, IngredientAlias, Recipe
 
 
 def visible_recipes(household):
-    """Returns every recipe this household is allowed to see - all the TheMealDB ones, plus its own custom ones.
+    """Returns every recipe this household is allowed to see.
 
-    Every page that lists or opens recipes (and later the pantry suggestions)
-    should start from this instead of Recipe.objects.all(), so one household's
-    custom recipes never show up for another household.
+    For now that's every recipe - all the TheMealDB ones and every household's
+    custom ones, the same as V1. Every page that lists or opens recipes (and
+    later the pantry suggestions) should still start from this instead of
+    Recipe.objects.all(), so the privacy toggle (planned as a minor feature)
+    only has to change this one function.
     """
-    # household is empty for TheMealDB recipes, so everyone can see those
-    return Recipe.objects.filter(Q(household__isnull=True) | Q(household=household))
+    # household isn't used yet - the privacy toggle will need it so a
+    # household can still see its own private recipes
+    return Recipe.objects.all()
 
 
 def find_ingredient(name):
