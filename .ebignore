@@ -1,0 +1,37 @@
+# What `eb deploy` (EB CLI) must NOT upload to AWS.
+# NOTE: when this file exists, the EB CLI uses it instead of .gitignore and uploads
+# your working folder as it is so commit your work before running `eb deploy`.
+
+# secrets - these go in Elastic Beanstalk environment properties instead
+.env
+
+# git and local environments
+.git/
+.venv/
+venv/
+env/
+
+# python cache
+__pycache__/
+*.pyc
+
+# generated on the server by collectstatic
+staticfiles/
+media/
+
+# database dumps and local databases
+*.sql
+*.dump
+*.sqlite3
+
+# editor and OS clutter
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# local zips (e.g. from git archive) and EB CLI files
+*.zip
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

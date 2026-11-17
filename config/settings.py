@@ -27,7 +27,23 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+# comma-separated list from the environment, e.g. ".elasticbeanstalk.com,.cloudfront.net" on AWS.
+# defaults to local addresses so runserver still works without setting it
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+# full https:// addresses allowed to submit forms (login etc), e.g. "https://d1234abcd.cloudfront.net".
+# only needed once the site is on https - empty by default
+CSRF_TRUSTED_ORIGINS = [origin for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if origin]
+
+# HTTPS through CloudFront - switched on with USE_HTTPS=True on AWS only.
+# visitors use https to CloudFront, but CloudFront talks to Elastic Beanstalk over
+# plain http and adds a "CloudFront-Forwarded-Proto: https" header. this tells Django
+# to trust that header, so it knows the visitor is really on https
+if os.environ.get("USE_HTTPS", "False") == "True":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_CLOUDFRONT_FORWARDED_PROTO", "https")
+    # login and form cookies only ever travel over https
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -137,6 +153,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# where `collectstatic` gathers every static file for the server to serve (nginx on AWS)
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
