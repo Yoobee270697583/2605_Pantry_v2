@@ -129,6 +129,24 @@ def detail(request, pk):
 
 
 @login_required
+def random_recipe(request):
+    """Opens a random recipe, like V1's Random Recipe button. V1 asked TheMealDB's random.php
+    for one, but all the recipes are in our database now so there's no API call."""
+    household = get_household(request.user)
+
+    # picks from visible_recipes, so another household's private recipe can't come up.
+    # order_by("?") gets the database to shuffle them - fine for 800 or so recipes
+    recipe = visible_recipes(household).order_by("?").first()
+
+    # only happens if the recipes haven't been imported yet
+    if recipe is None:
+        messages.info(request, "There aren't any recipes yet.")
+        return redirect("recipes:index")
+
+    return redirect("recipes:detail", pk=recipe.pk)
+
+
+@login_required
 @require_POST
 def save_recipe(request, pk):
     """Saves a recipe to the household's saved list."""
