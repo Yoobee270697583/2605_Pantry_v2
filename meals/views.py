@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from households.utils import get_household
 from recipes.utils import visible_recipes
 from .models import PlannedMeal, CookedMeal
-from .utils import deduct_recipe_from_pantry
+from .utils import deduct_recipe_from_pantry, visible_plans
 
 # planning meals, and (later) marking them as cooked
 
@@ -30,9 +30,10 @@ def planned_index(request):
     """The Planned Meals page. Shows every meal the household has planned, oldest first."""
     household = get_household(request.user)
 
+    # visible_plans leaves out plans for recipes another household has since made private.
     # select_related gets each plan's recipe and who planned it in the same query,
     # instead of V1's Recipe.query.get() for every plan
-    plans = PlannedMeal.objects.filter(household=household).select_related("recipe", "added_by")
+    plans = visible_plans(household).select_related("recipe", "added_by")
 
     return render(request, "meals/planned.html", {"plans": plans})
 
@@ -57,8 +58,9 @@ def add_to_plan(request, recipe_id):
 @require_POST
 def remove_from_plan(request, plan_id):
     """Takes a meal off the household's plan without cooking it."""
-    # filtering by household means another household's plan is a 404 (V1 didn't check this)
-    plan = get_object_or_404(PlannedMeal, id=plan_id, household=get_household(request.user))
+    # visible_plans only has this household's plans, so another household's plan is a 404
+    # (V1 didn't check this), and so is one whose recipe has since been made private
+    plan = get_object_or_404(visible_plans(get_household(request.user)), id=plan_id)
     name = plan.recipe.name
     plan.delete()
 
@@ -81,11 +83,11 @@ def mark_as_cooked(request, plan_id):
     with transaction.atomic():
         # select_for_update locks the plan, so if two people in the household press
         # Cook at the same moment, the second one waits, then gets a 404 because it's gone.
-        # of=("self",) locks only the plan row, not the shared recipe row select_related joins in
+        # of=("self",) locks only the plan row, not the shared recipe row select_related joins in.
+        # visible_plans means a plan whose recipe has since been made private can't be cooked either
         plan = get_object_or_404(
-            PlannedMeal.objects.select_for_update(of=("self",)).select_related("recipe"),
+            visible_plans(household).select_for_update(of=("self",)).select_related("recipe"),
             id=plan_id,
-            household=household,
         )
         recipe = plan.recipe
 

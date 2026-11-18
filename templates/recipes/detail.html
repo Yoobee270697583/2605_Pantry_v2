@@ -57,7 +57,7 @@
 
         {# saves belong to the household, so anyone in it can save or remove a recipe #}
         {% if saved %}
-            <form method="post" action="{% url 'recipes:unsave' recipe.pk %}" class="d-flex align-items-center gap-3 mb-4">
+            <form method="post" action="{% url 'recipes:unsave' recipe.pk %}" class="d-flex align-items-center gap-3 mb-2">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline-secondary btn-sm">Remove from saved</button>
                 <small class="text-body-secondary">
@@ -72,17 +72,24 @@
                 </small>
             </form>
         {% else %}
-            <form method="post" action="{% url 'recipes:save' recipe.pk %}" class="mb-4">
+            <form method="post" action="{% url 'recipes:save' recipe.pk %}" class="mb-2">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-sm">Save recipe</button>
             </form>
         {% endif %}
 
         {# planned meals belong to the household, the same as saves. next brings you back to this page #}
-        <form method="post" action="{% url 'planned:add' recipe.pk %}" class="mb-4">
+        <form method="post" action="{% url 'planned:add' recipe.pk %}" class="d-flex align-items-center gap-3 mb-4">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <button type="submit" class="btn btn-outline-primary btn-sm">Plan this meal</button>
+            {# shows it's already planned before you press it again - you still can, like V1 #}
+            {% if planned_count %}
+                <small class="text-body-secondary">
+                    In your Planned Meals{% if planned_count > 1 %} ×{{ planned_count }}{% endif %}
+                    · <a href="{% url 'planned:index' %}">View</a>
+                </small>
+            {% endif %}
         </form>
 
         <h2 class="h5">Ingredients</h2>

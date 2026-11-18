@@ -18,7 +18,7 @@ from .utils import (
 
 
 def go_back(request):
-    """Back to the page the button was on (My Kitchen or the Household page)."""
+    """Back to the page the button was on (My Kitchen, the Household page or Settings)."""
     next_url = request.POST.get("next", "")
     if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
         return redirect(next_url)
@@ -100,16 +100,18 @@ def leave(request):
 @require_POST
 def rename(request):
     household = get_household(request.user)
+    # go_back so renaming from Settings comes back to Settings. the Household page's form
+    # has no "next", so that still comes back to the Household page like before
     if not household.members.filter(user=request.user, role=HouseholdMember.OWNER).exists():
         messages.error(request, "Only the owner can rename the household.")
-        return redirect("households:index")
+        return go_back(request)
     form = RenameForm(request.POST, instance=household)
     if form.is_valid():
         form.save()
         messages.success(request, "Household renamed.")
     else:
         messages.error(request, form.errors["name"][0])
-    return redirect("households:index")
+    return go_back(request)
 
 
 @login_required

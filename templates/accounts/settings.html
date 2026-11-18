@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Settings · Pantry{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Settings</h1>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Your details</h2>
+                <form method="post" action="{% url 'accounts:settings' %}">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="{{ name_form.first_name.id_for_label }}" class="form-label">First name</label>
+                            {{ name_form.first_name }}
+                            {% for error in name_form.first_name.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="{{ name_form.last_name.id_for_label }}" class="form-label">Last name</label>
+                            {{ name_form.last_name }}
+                            {% for error in name_form.last_name.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+                <p class="small text-secondary mt-3 mb-0">Your first name is what the rest of your household sees.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Signing in</h2>
+                <p class="small text-secondary mb-0">Email</p>
+                {# text-break so a long email address wraps on a phone instead of running off the card #}
+                <p class="mb-3 text-break">{{ user.email }}</p>
+                {# allauth's own page, it uses the same layout as the rest of the site (templates/allauth/layouts/manage.html) #}
+                <a href="{% url 'account_change_password' %}" class="btn btn-outline-primary btn-sm">Change password</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-1">Household</h2>
+                <p class="small text-secondary mb-3">
+                    {{ member_count }} member{{ member_count|pluralize }} · {% if is_owner %}you're the owner{% else %}you're a member{% endif %}
+                </p>
+                {% if is_owner %}
+                    {# the same rename as the Household page. "next" brings you back here instead of the Household page #}
+                    <form method="post" action="{% url 'households:rename' %}" class="mb-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <label for="{{ rename_form.name.id_for_label }}" class="form-label">Household name</label>
+                        <div class="d-flex gap-2">
+                            {{ rename_form.name }}
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="small text-secondary mb-0">Household name</p>
+                    <p class="mb-1 text-break">{{ household.name }}</p>
+                    <p class="small text-secondary mb-3">Only the owner can rename it.</p>
+                {% endif %}
+                <p class="small text-secondary mb-2">Invite people, see who's in it, or leave it on the Household page.</p>
+                <a href="{% url 'households:index' %}" class="btn btn-outline-primary btn-sm">Manage household</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
