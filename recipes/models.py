@@ -123,8 +123,9 @@ class Recipe(models.Model):
     # where the recipe came from - TheMealDB or Custom
     source = models.CharField(max_length=50, default="TheMealDB")
 
-    # the household that made it - empty for TheMealDB recipes. everyone can see every
-    # recipe, but only this household can edit or delete it. deleting the household deletes its recipes
+    # the household that made it - empty for TheMealDB recipes. other households can see
+    # it too unless it's private, but only this household can edit or delete it.
+    # deleting the household deletes its recipes
     household = models.ForeignKey(
         "households.Household",
         on_delete=models.CASCADE,
@@ -142,11 +143,23 @@ class Recipe(models.Model):
         related_name="created_recipes"
     )
 
+    # private recipes only show up for the household that made them (see
+    # visible_recipes in utils.py). TheMealDB recipes are always public
+    is_private = models.BooleanField(default=False)
+
     # date the recipe was added
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            # only a household's own recipe can be private - a private TheMealDB
+            # recipe would be hidden from every household
+            models.CheckConstraint(
+                condition=models.Q(is_private=False) | models.Q(household__isnull=False),
+                name="recipe_private_needs_household",
+            ),
+        ]
 
     def __str__(self):
         return self.name

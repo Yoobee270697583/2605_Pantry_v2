@@ -35,7 +35,7 @@ def index(request):
     # "custom_recipes" is the related_name on Recipe.household
     created_count = household.custom_recipes.count()
 
-    # TheMealDB recipes plus everyone's custom ones
+    # TheMealDB recipes, other households' custom ones that aren't private, and ours
     recipes = visible_recipes(household)
 
     # the saved tab only shows this household's saved recipes
@@ -98,7 +98,7 @@ def detail(request, pk):
     """Shows one recipe - its ingredients, instructions and youtube video."""
     household = get_household(request.user)
 
-    # anyone can open any recipe, including other households' custom ones.
+    # another household's private recipe is a 404 - visible_recipes leaves it out.
     # select_related gets who created it (for "Created by") in the same query
     recipe = get_object_or_404(visible_recipes(household).select_related("created_by"), pk=pk)
 
@@ -166,7 +166,7 @@ def unsave_recipe(request, pk):
 
 @login_required
 def create_recipe(request):
-    """The Create Recipe page. Everyone can see a custom recipe, but only the household that made it can edit or delete it."""
+    """The Create Recipe page. Other households can see a custom recipe unless it's private, but only the household that made it can edit or delete it."""
     form = RecipeForm(request.POST or None)
     # the prefix keeps the line fields apart from the recipe's, e.g. "lines-0-ingredient"
     lines = IngredientLineFormSet(request.POST or None, prefix="lines")
