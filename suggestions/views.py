@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from households.utils import get_household
+from meals.models import PlannedMeal
 from recipes.models import SavedRecipe
 from recipes.utils import find_ingredient, visible_recipes
 from .utils import MAX_MISSING, get_missing, get_pantry_ids, get_saved_swaps, get_suggestions, get_swap_tips
@@ -37,6 +38,9 @@ def index(request):
     saved_ids = set(SavedRecipe.objects.filter(household=household).values_list("recipe_id", flat=True))
     if saved_only:
         suggestions = [suggestion for suggestion in suggestions if suggestion["recipe"].pk in saved_ids]
+
+    # and every recipe it has in Planned Meals, for a "Planned" badge, the same as My Recipes
+    planned_ids = set(PlannedMeal.objects.filter(household=household).values_list("recipe_id", flat=True))
 
     # recipes with nothing missing. the ones that use the most of the pantry come
     # first, then A-Z so the order doesn't jump around between visits
@@ -82,6 +86,7 @@ def index(request):
         "active_tab": active_tab,
         "saved_only": saved_only,
         "saved_ids": saved_ids,
+        "planned_ids": planned_ids,
         # the suggestion surprise me picked, None if it wasn't pressed
         "picked": picked,
         "page": page,

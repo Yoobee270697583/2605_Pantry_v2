@@ -100,6 +100,7 @@
                                     <button type="submit" class="btn btn-sm btn-outline-primary position-relative z-2">Plan this meal</button>
                                 </form>
                                 {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
+                                {% if recipe.pk in planned_ids %}<span class="badge text-bg-info">Planned</span>{% endif %}
                                 {% if recipe.is_private %}<span class="badge text-bg-secondary">Private</span>{% endif %}
                                 <span class="badge border border-primary text-primary">Uses {{ suggestion.using }} pantry item{{ suggestion.using|pluralize }}</span>
                                 {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}

@@ -91,6 +91,7 @@
                             <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
                         </h2>
                         {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
+                        {% if recipe.pk in planned_ids %}<span class="badge text-bg-info">Planned</span>{% endif %}
                         {# only the household that made a custom recipe gets this badge #}
                         {% if recipe.household_id == household.id %}<span class="badge border border-primary text-primary">Your recipe</span>{% endif %}
                         {# only the household that made a private recipe can see it, so this only shows next to "Your recipe" #}

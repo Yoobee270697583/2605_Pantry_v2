@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from households.utils import get_household
+from meals.models import PlannedMeal
 from .forms import IngredientLineFormSet, RecipeForm
 from .models import Ingredient, IngredientAlias, Recipe, RecipeIngredient, SavedRecipe
 from .utils import visible_recipes
@@ -30,6 +31,9 @@ def index(request):
 
     # ids of every recipe this household has saved, so each card can show a "Saved" badge
     saved_ids = set(SavedRecipe.objects.filter(household=household).values_list("recipe_id", flat=True))
+
+    # and every recipe it has in Planned Meals, for a "Planned" badge
+    planned_ids = set(PlannedMeal.objects.filter(household=household).values_list("recipe_id", flat=True))
 
     # how many recipes the household has made, for the number on the Created tab
     # "custom_recipes" is the related_name on Recipe.household
@@ -81,6 +85,7 @@ def index(request):
         # so each card can tell if a custom recipe is this household's own
         "household": household,
         "saved_ids": saved_ids,
+        "planned_ids": planned_ids,
         "created_count": created_count,
         "page": page,
         "total": paginator.count,
@@ -118,6 +123,10 @@ def detail(request, pk):
         recipe=recipe
     ).select_related("saved_by").first()
 
+    # how many times it's in this household's Planned Meals - without this, pressing
+    # "Plan this meal" again plans it twice and nothing on the page shows it
+    planned_count = PlannedMeal.objects.filter(household=household, recipe=recipe).count()
+
     return render(request, "recipes/detail.html", {
         "recipe": recipe,
         # so the page only shows edit and delete if it's this household's recipe
@@ -125,6 +134,7 @@ def detail(request, pk):
         "ingredients": ingredients,
         "youtube_embed_url": youtube_embed_url,
         "saved": saved,
+        "planned_count": planned_count,
     })
 
 
