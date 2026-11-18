@@ -43,9 +43,11 @@ def deduct_recipe_from_pantry(household, recipe):
         needed = line.quantity
 
         # same rule as suggestions: run-out (0) and expired items don't count as stock.
-        # PantryItem's Meta ordering already puts the soonest expiry first, no-expiry last
+        # PantryItem's Meta ordering already puts the soonest expiry first, no-expiry last.
+        # that ordering joins the ingredient table (for ingredient__name), so of=("self",) is needed
+        # to lock only this household's pantry rows, not the Ingredient row every household shares
         items = (
-            PantryItem.objects.select_for_update()
+            PantryItem.objects.select_for_update(of=("self",))
             .filter(household=household, ingredient=line.ingredient, quantity__gt=0)
             .exclude(expiry_date__lt=today)
         )
@@ -60,7 +62,9 @@ def deduct_recipe_from_pantry(household, recipe):
             item.quantity = round(item.quantity - used, 2)
             # updated_at has to be listed too, or auto_now doesn't save it
             item.save(update_fields=["quantity", "updated_at"])
-            needed -= used
+            # rounded too - otherwise a recipe needing 1 with 0.7 + 0.3 in the pantry is left
+            # needing 0.00000000000000005 and says it's short when there was exactly enough
+            needed = round(needed - used, 2)
 
         name = line.ingredient.name
         # a recipe can list the same ingredient twice, so only report it once
