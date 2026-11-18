@@ -23,6 +23,7 @@
     <div class="col-md-7">
         <h1>{{ recipe.name }}</h1>
         <div class="mb-3">
+            {% if recipe.is_private %}<span class="badge text-bg-secondary">Private</span>{% endif %}
             {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
             {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
         </div>

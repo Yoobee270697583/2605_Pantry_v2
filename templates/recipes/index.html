@@ -91,6 +91,8 @@
                         {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
                         {# only the household that made a custom recipe gets this badge #}
                         {% if recipe.household_id == household.id %}<span class="badge border border-primary text-primary">Your recipe</span>{% endif %}
+                        {# only the household that made a private recipe can see it, so this only shows next to "Your recipe" #}
+                        {% if recipe.is_private %}<span class="badge text-bg-secondary">Private</span>{% endif %}
                         {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}
                         {% if recipe.area %}<span class="badge text-bg-light border">{{ recipe.area }}</span>{% endif %}
                     </div>

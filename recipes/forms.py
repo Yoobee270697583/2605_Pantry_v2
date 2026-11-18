@@ -23,10 +23,12 @@ class RecipeForm(forms.ModelForm):
 
     class Meta:
         model = Recipe
-        fields = ["name", "category", "area", "image_url", "instructions"]
+        # is_private is the "Only my household can see this recipe" tick box
+        fields = ["name", "category", "area", "image_url", "instructions", "is_private"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "e.g. Grandma's Pasta"}),
             "instructions": forms.Textarea(attrs={"class": "form-control", "rows": 12, "placeholder": "Step 1: ..."}),
+            "is_private": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, **kwargs):
