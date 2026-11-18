@@ -55,6 +55,20 @@
                 </div>
             {% endif %}
         {% endif %}
+
+        {# the next step after getting swap ideas, the same as on the recipe page. next brings you back here #}
+        {# flex-wrap lets the planned line drop underneath on a phone instead of squashing the button #}
+        <form method="post" action="{% url 'planned:add' recipe.pk %}" class="d-flex flex-wrap align-items-center gap-3 mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-outline-primary text-nowrap">Plan this meal</button>
+            {% if planned_count %}
+                <small class="text-body-secondary">
+                    In your Planned Meals{% if planned_count > 1 %} ×{{ planned_count }}{% endif %}
+                    · <a href="{% url 'planned:index' %}">View</a>
+                </small>
+            {% endif %}
+        </form>
     </div>
 </div>
 {% endblock %}

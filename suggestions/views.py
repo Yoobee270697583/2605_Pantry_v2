@@ -144,6 +144,10 @@ def swaps(request, pk):
                 "in_pantry": ingredient is not None and ingredient.id in pantry_ids,
             })
 
+    # how many times it's in this household's Planned Meals, for the line next to "Plan this meal",
+    # the same as the recipe page
+    planned_count = PlannedMeal.objects.filter(household=household, recipe=recipe).count()
+
     return render(request, "suggestions/swaps.html", {
         "recipe": recipe,
         "missing": missing,
@@ -151,4 +155,5 @@ def swaps(request, pk):
         # True once there's an answer, even if it was "no ideas"
         "asked": saved_swaps is not None,
         "swaps": swap_list,
+        "planned_count": planned_count,
     })
