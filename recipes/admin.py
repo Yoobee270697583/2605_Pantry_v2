@@ -31,8 +31,8 @@ class IngredientAdmin(admin.ModelAdmin):
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     # household is empty for TheMealDB recipes
-    list_display = ["name", "category", "area", "source", "household"]
-    list_filter = ["category", "area", "source"]
+    list_display = ["name", "category", "area", "source", "household", "is_private"]
+    list_filter = ["category", "area", "source", "is_private"]
     search_fields = ["name"]
     inlines = [RecipeIngredientInline]
 
