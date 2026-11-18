@@ -1,0 +1,64 @@
+{% load static %}
+{% comment %}
+    the 3 meal idea cards. its own file so "Other ideas" can fetch just this part
+    (kitchen/views.py sends only this when the request comes from the button's JavaScript).
+{% endcomment %}
+{% if ideas %}
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+        {% for idea in ideas %}
+            {% with recipe=idea.recipe %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="ratio ratio-16x9 bg-body-tertiary rounded-top overflow-hidden">
+                        {% if recipe.image_url %}
+                            <img src="{{ recipe.image_url }}" alt="{{ recipe.name }}" class="object-fit-cover" loading="lazy">
+                        {% else %}
+                            <div class="d-flex align-items-center justify-content-center">
+                                <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="56" class="opacity-50">
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="h6 card-title">
+                            <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link link-body-emphasis text-decoration-none">{{ recipe.name }}</a>
+                        </h3>
+
+                        {% if idea.uses_expiring %}
+                            {% with item=idea.uses_expiring.0 %}
+                            <p class="small mb-1">
+                                Uses your <strong>{{ item.ingredient.name }}</strong>
+                                ({% if idea.soonest == 0 %}expires today{% elif idea.soonest == 1 %}expires tomorrow{% else %}expires in {{ idea.soonest }} days{% endif %})
+                            </p>
+                            {% endwith %}
+                        {% else %}
+                            <p class="small text-secondary mb-1">Uses {{ idea.using }} of your pantry items</p>
+                        {% endif %}
+
+                        {% if idea.missing %}
+                            <p class="small mb-0"><span class="text-danger fw-semibold">Missing:</span>
+                                {% for ingredient in idea.missing %}{{ ingredient.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+                        {% elif idea.low_on %}
+                            <p class="small mb-0"><span class="text-warning-emphasis fw-semibold">Low on:</span>
+                                {% for low in idea.low_on %}{{ low.ingredient.name }} (need {{ low.need|floatformat:"-1" }}{% if low.ingredient.unit != "each" %} {{ low.ingredient.unit }}{% endif %}, have {{ low.have|floatformat:"-1" }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+                        {% endif %}
+
+                        <div class="mt-auto pt-2">
+                            {% if idea.missing %}
+                                <span class="badge border border-warning-subtle text-warning-emphasis">Almost there</span>
+                            {% elif idea.low_on %}
+                                <span class="badge text-bg-warning">Low on stock</span>
+                            {% else %}
+                                <span class="badge text-bg-success">Ready to cook</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+{% elif has_pantry %}
+    <p class="text-secondary">No recipes match your pantry yet. Add a few more ingredients, or browse <a href="{% url 'suggestions:index' %}">Suggested Recipes</a>.</p>
+{% else %}
+    <p class="text-secondary">Add some food to <a href="{% url 'pantry:index' %}">My Pantry</a> and meal ideas will show up here.</p>
+{% endif %}

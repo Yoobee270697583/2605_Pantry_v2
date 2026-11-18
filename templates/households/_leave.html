@@ -1,0 +1,14 @@
+<div class="card border-danger-subtle">
+    <div class="card-body">
+        <h2 class="h5">Leave household</h2>
+        <p class="small text-secondary">
+            You'll get a household of your own again. The pantry stays here with everyone else; private recipes you made come with you.
+            {% if is_owner %}As the owner, ownership passes to the person who's been here longest.{% endif %}
+        </p>
+        <form method="post" action="{% url 'households:leave' %}"
+              onsubmit="return confirm('Leave {{ household.name|escapejs }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">Leave household</button>
+        </form>
+    </div>
+</div>

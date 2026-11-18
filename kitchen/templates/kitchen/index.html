@@ -1,7 +1,114 @@
 {% extends "base.html" %}
+{% load static household_tags %}
 
 {% block title %}My Kitchen · Pantry{% endblock %}
 
 {% block content %}
-    <h1>My Kitchen</h1>
+    <h1 class="mb-4">My Kitchen</h1>
+
+    {% household_card as hh %}
+    {% if not hh.living_alone %}
+        <div class="mb-3">{% include "households/_kitchen_card.html" %}</div>
+    {% endif %}
+
+    <div class="row g-3 mb-4">
+        {% if hh.living_alone %}
+            <div class="col-12 col-lg-6">{% include "households/_kitchen_card.html" %}</div>
+        {% endif %}
+
+        <div class="col-12{% if hh.living_alone %} col-lg-6{% endif %}">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h2 class="h5 mb-0">Expiring soon</h2>
+                        <a href="{% url 'pantry:index' %}" class="small">My Pantry</a>
+                    </div>
+                    {% if expiring %}
+                        <ul class="list-group list-group-flush{% if not hh.living_alone %} flex-row row row-cols-1 row-cols-lg-2 g-0{% endif %}">
+                            {% for item in expiring %}
+                                <li class="list-group-item px-0 d-flex align-items-center gap-3{% if not hh.living_alone %} col pe-lg-4{% endif %}">
+                                    {% if item.ingredient.image_url %}
+                                        <img src="{{ item.ingredient.image_url }}" alt="" width="32" height="32" class="object-fit-contain flex-shrink-0" loading="lazy" onerror="this.style.visibility='hidden'">
+                                    {% else %}
+                                        <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="32" height="32" class="object-fit-contain flex-shrink-0 opacity-50">
+                                    {% endif %}
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="text-truncate">{{ item.ingredient.name }}</div>
+                                        <div class="small text-secondary">{{ item.quantity|floatformat:"-2" }} {{ item.ingredient.get_unit_display }}</div>
+                                    </div>
+                                    {% if item.days_left == 0 %}
+                                        <span class="badge text-bg-danger">Today</span>
+                                    {% elif item.days_left == 1 %}
+                                        <span class="badge text-bg-warning">Tomorrow</span>
+                                    {% else %}
+                                        <span class="badge text-bg-light border">{{ item.days_left }} days</span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        {% if more_expiring %}
+                            <p class="small text-secondary mt-2 mb-0">and {{ more_expiring }} more in <a href="{% url 'pantry:index' %}">My Pantry</a></p>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-secondary mb-0">Nothing expires in the next {{ expiring_days }} days.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section aria-labelledby="ideas-heading" id="ideas">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h2 class="h4 mb-0" id="ideas-heading">Meals you can make today</h2>
+            {% if can_rotate %}
+                {# a normal link that still works without JavaScript - the script below just stops it reloading the whole page #}
+                <a href="?ideas={{ next_turn }}#ideas" id="other-ideas" data-turn="{{ next_turn }}" class="btn btn-outline-primary btn-sm">&#8635; Other ideas</a>
+            {% endif %}
+        </div>
+
+        {# aria-live: screen readers announce the new ideas when they're swapped in #}
+        <div id="ideas-list" aria-live="polite">
+            {% include "kitchen/_ideas.html" %}
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // "Other ideas" swaps in the next 3 cards without reloading the whole page.
+    // the server sends just the cards (kitchen/_ideas.html) when it sees the X-Requested-With header
+    const otherIdeas = document.getElementById("other-ideas");
+    if (otherIdeas) {
+        otherIdeas.addEventListener("click", async (event) => {
+            event.preventDefault();
+            if (otherIdeas.classList.contains("disabled")) return;   // already loading
+
+            const turn = Number(otherIdeas.dataset.turn);
+            const label = otherIdeas.innerHTML;
+            otherIdeas.classList.add("disabled");
+            otherIdeas.setAttribute("aria-disabled", "true");
+            otherIdeas.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading…';
+
+            try {
+                const response = await fetch(`?ideas=${turn}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+                if (!response.ok) throw new Error(response.status);
+                document.getElementById("ideas-list").innerHTML = await response.text();
+
+                // next click gets the set after this one, and the address bar remembers where we are,
+                // so refreshing the page shows the same 3
+                otherIdeas.dataset.turn = turn + 1;
+                otherIdeas.href = `?ideas=${turn + 1}#ideas`;
+                history.replaceState(null, "", `?ideas=${turn}#ideas`);
+            } catch (error) {
+                // something went wrong - fall back to the normal link, which reloads the page
+                window.location.href = otherIdeas.href;
+                return;
+            } finally {
+                otherIdeas.classList.remove("disabled");
+                otherIdeas.removeAttribute("aria-disabled");
+                otherIdeas.innerHTML = label;
+            }
+        });
+    }
+</script>
 {% endblock %}
