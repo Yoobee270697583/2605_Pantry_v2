@@ -93,6 +93,12 @@
                                         <button type="submit" class="btn btn-sm btn-outline-primary position-relative z-2">Ask AI for swaps</button>
                                     </form>
                                 {% endif %}
+                                {# next brings you back to this tab and page after planning it #}
+                                <form method="post" action="{% url 'planned:add' recipe.pk %}" class="mb-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary position-relative z-2">Plan this meal</button>
+                                </form>
                                 {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
                                 <span class="badge border border-primary text-primary">Uses {{ suggestion.using }} pantry item{{ suggestion.using|pluralize }}</span>
                                 {% if recipe.category %}<span class="badge text-bg-light border">{{ recipe.category }}</span>{% endif %}

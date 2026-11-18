@@ -77,6 +77,13 @@
             </form>
         {% endif %}
 
+        {# planned meals belong to the household, the same as saves. next brings you back to this page #}
+        <form method="post" action="{% url 'planned:add' recipe.pk %}" class="mb-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm">Plan this meal</button>
+        </form>
+
         <h2 class="h5">Ingredients</h2>
         <ul class="list-group">
             {% for line in ingredients %}
