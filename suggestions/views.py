@@ -1,12 +1,14 @@
 import random
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from households.utils import get_household
 from recipes.models import SavedRecipe
-from .utils import MAX_MISSING, get_pantry_ids, get_suggestions
+from recipes.utils import find_ingredient, visible_recipes
+from .utils import MAX_MISSING, get_missing, get_pantry_ids, get_saved_swaps, get_suggestions, get_swap_tips
 
 # suggests recipes the household can make (or nearly make) with what's in its pantry
 
@@ -90,4 +92,58 @@ def index(request):
         # so the page can tell an empty pantry apart from one that just can't make anything yet
         "has_pantry": len(pantry_ids) > 0,
         "filter_params": params.urlencode(),
+    })
+
+
+@login_required
+def swaps(request, pk):
+    """AI swap ideas for the ingredients a recipe is missing. The GET page shows the saved ideas,
+    or a button to ask for them. The button POSTs here to ask Claude, then comes back to the GET."""
+    household = get_household(request.user)
+    # the same recipes the suggestions come from, so one the household can't see is a 404
+    recipe = get_object_or_404(visible_recipes(household), pk=pk)
+    pantry_ids = get_pantry_ids(household)
+    missing = get_missing(recipe, pantry_ids)
+
+    # only for recipes that are almost there - nothing missing means nothing to swap,
+    # and swapping lots of ingredients would really be a different recipe
+    can_ask = 0 < len(missing) <= MAX_MISSING
+
+    # a POST and not a link, because asking Claude costs money and links can get opened by anything
+    if request.method == "POST":
+        if can_ask:
+            # the answer gets saved, so the GET page shows it after the redirect
+            answer, problem = get_swap_tips(household, request.user, recipe, missing, pantry_ids)
+            if problem == "limit":
+                messages.warning(request, "You've used all your AI swap tips for now. Try again tomorrow.")
+            elif problem == "unavailable":
+                messages.error(request, "AI tips aren't available right now. Try again in a minute.")
+        # back to the GET page, so refreshing it doesn't ask again
+        return redirect("suggestions:swaps", pk=recipe.pk)
+
+    # the answer from last time if the pantry hasn't changed since. None if it hasn't asked yet
+    saved_swaps = None
+    if can_ask:
+        saved_swaps = get_saved_swaps(household, recipe, missing, pantry_ids)
+
+    # check each swap against the pantry, so the page can say which ones you've already got
+    swap_list = []
+    if saved_swaps:
+        for swap in saved_swaps:
+            # find_ingredient matches other names too, e.g. "onions" -> Onion
+            ingredient = find_ingredient(swap["swap"])
+            swap_list.append({
+                "missing": swap["missing"],
+                "swap": swap["swap"],
+                "tip": swap["tip"],
+                "in_pantry": ingredient is not None and ingredient.id in pantry_ids,
+            })
+
+    return render(request, "suggestions/swaps.html", {
+        "recipe": recipe,
+        "missing": missing,
+        "can_ask": can_ask,
+        # True once there's an answer, even if it was "no ideas"
+        "asked": saved_swaps is not None,
+        "swaps": swap_list,
     })

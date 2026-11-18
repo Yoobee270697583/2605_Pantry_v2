@@ -87,6 +87,11 @@
                                         <span class="text-danger fw-semibold">Missing:</span>
                                         {% for ingredient in suggestion.missing %}{{ ingredient.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                                     </p>
+                                    {# a form not a link, because asking the AI costs a little. position-relative z-2 puts the button above the stretched link so it can be clicked #}
+                                    <form method="post" action="{% url 'suggestions:swaps' recipe.pk %}" class="mb-2" onsubmit="showAsking(this)">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-primary position-relative z-2">Ask AI for swaps</button>
+                                    </form>
                                 {% endif %}
                                 {% if recipe.pk in saved_ids %}<span class="badge text-bg-primary">Saved</span>{% endif %}
                                 <span class="badge border border-primary text-primary">Uses {{ suggestion.using }} pantry item{{ suggestion.using|pluralize }}</span>
@@ -140,4 +145,15 @@
         </p>
     {% endif %}
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // asking the AI takes a few seconds, so show that it's working and stop it being pressed twice
+    function showAsking(form) {
+        const button = form.querySelector("button");
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> <span role="status">Asking AI...</span>';
+    }
+</script>
 {% endblock %}

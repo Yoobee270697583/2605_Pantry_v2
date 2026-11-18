@@ -61,6 +61,8 @@ Generate a `SECRET_KEY` with:
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
+The AI swap tips on Suggested Recipes also need a Claude API key in `.env` as `ANTHROPIC_API_KEY` (see [Claude API](#claude-api) below). It's optional - without one everything else works the same, and the tips just say they aren't available.
+
 ### 5. Create the tables and load the recipe data
 
 ```
@@ -110,6 +112,10 @@ Recipes and the ingredient list come from [TheMealDB](https://www.themealdb.com/
 Gram weights for common ingredients come from [USDA FoodData Central](https://fdc.nal.usda.gov/). Put your own free key from [api.data.gov](https://api.data.gov/signup/) in `.env` as `USDA_API_KEY`, or leave it as `DEMO_KEY`.
 
 Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. fdc.nal.usda.gov. Public domain (CC0 1.0).
+
+### Claude API
+
+The AI swap tips on Suggested Recipes come from Anthropic's [Claude API](https://platform.claude.com), using the Claude Haiku 5.5 model. Make an API key in the Claude Console and put it in `.env` as `ANTHROPIC_API_KEY`. Give the key its own workspace with a spend limit, so a bug can't use up all your credit.
 
 ---
 

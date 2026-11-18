@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Swap ideas for {{ recipe.name }} — Pantry{% endblock %}
+
+{% block content %}
+<a href="{% url 'suggestions:index' %}?tab=almost" class="link-secondary text-decoration-none">&larr; Back to Almost there</a>
+
+<div class="row mt-2">
+    <div class="col-lg-8">
+        <h1 class="mb-0">Swap ideas</h1>
+        <p class="text-body-secondary mt-1">For <a href="{% url 'recipes:detail' recipe.pk %}">{{ recipe.name }}</a></p>
+
+        {% if not missing %}
+            <p>You've got everything for this recipe, so there's nothing to swap.</p>
+        {% elif not can_ask %}
+            <p>You're missing {{ missing|length }} ingredients for this one. AI swaps are for recipes you're only 1 or 2 ingredients away from.</p>
+        {% else %}
+            <p class="mb-3">
+                <span class="text-danger fw-semibold">Missing:</span>
+                {% for ingredient in missing %}{{ ingredient.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </p>
+
+            {% if asked %}
+                {% if swaps %}
+                    <ul class="list-group mb-3">
+                        {% for swap in swaps %}
+                            <li class="list-group-item">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="text-body-secondary small">Instead of {{ swap.missing }}, use</span>
+                                    <strong>{{ swap.swap }}</strong>
+                                    {% if swap.in_pantry %}
+                                        <span class="badge text-bg-primary">From your pantry</span>
+                                    {% else %}
+                                        <span class="badge text-bg-light border">You'd need to buy this</span>
+                                    {% endif %}
+                                </div>
+                                <p class="small mb-0 mt-1">{{ swap.tip }}</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>The AI couldn't think of any good swaps for this one.</p>
+                {% endif %}
+                {# AI can get things wrong, and allergies matter #}
+                <p class="small text-body-secondary">These ideas come from AI, so use your own judgement, especially with allergies. You'll get new ideas when your pantry changes.</p>
+            {% else %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <p>Not sure what to use instead? AI can suggest swaps, starting with what's already in your pantry.</p>
+                        <form method="post" action="{% url 'suggestions:swaps' recipe.pk %}" onsubmit="showAsking(this)">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Ask AI for swaps</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // asking the AI takes a few seconds, so show that it's working and stop it being pressed twice
+    function showAsking(form) {
+        const button = form.querySelector("button");
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> <span role="status">Asking AI...</span>';
+    }
+</script>
+{% endblock %}
