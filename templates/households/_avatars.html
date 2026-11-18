@@ -1,0 +1,6 @@
+{# the first 3 members' initials, used on the My Kitchen card #}
+<div class="d-flex gap-1 flex-shrink-0" aria-hidden="true">
+    {% for member in members|slice:":3" %}
+        <span class="pantry-avatar">{{ member.user.first_name|default:member.user.username|first|upper }}</span>
+    {% endfor %}
+</div>

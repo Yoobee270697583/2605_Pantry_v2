@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ household.name }} · Pantry{% endblock %}
+
+{% block content %}
+<a href="{% url 'kitchen:index' %}" class="link-secondary text-decoration-none">&larr; Back to My Kitchen</a>
+
+<h1 class="mt-2 mb-1">{{ household.name }}</h1>
+<p class="text-secondary mb-4">
+    {{ members|length }} member{{ members|length|pluralize }} ·
+    {% if is_owner %}you're the owner{% else %}you're a member{% endif %}
+    {% if is_owner %} · <a href="#rename" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="rename">Rename</a>{% endif %}
+</p>
+
+{% if is_owner %}
+    <div class="collapse mb-4" id="rename">
+        <form method="post" action="{% url 'households:rename' %}" class="d-flex gap-2 col-md-6 px-0">
+            {% csrf_token %}
+            {{ rename_form.name }}
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-xl-7 d-flex flex-column gap-3">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Members</h2>
+                <ul class="list-group list-group-flush">
+                    {% for member in members %}
+                        <li class="list-group-item px-0 d-flex flex-wrap align-items-center gap-2 gap-sm-3">
+                            <span class="pantry-avatar">{{ member.user.first_name|default:member.user.username|first|upper }}</span>
+                            <div class="flex-grow-1">
+                                <div>
+                                    {{ member.user.first_name|default:member.user.username }}
+                                    {% if member.role == "owner" %}<span class="badge text-bg-success">Owner</span>{% endif %}
+                                </div>
+                                <div class="small text-secondary">{% if member.pk == me.pk %}You · {% endif %}joined {{ member.joined_at|date:"j M Y" }}</div>
+                            </div>
+                            {% if is_owner and member.pk != me.pk %}
+                                {% with name=member.user.first_name|default:member.user.username %}
+                                <div class="d-flex gap-2 ms-auto">
+                                    <form method="post" action="{% url 'households:make_owner' member.pk %}"
+                                          onsubmit="return confirm('Make {{ name|escapejs }} the owner? You will become a normal member.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Make owner</button>
+                                    </form>
+                                    <form method="post" action="{% url 'households:remove' member.pk %}"
+                                          onsubmit="return confirm('Remove {{ name|escapejs }}? They will get an empty household of their own.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                                    </form>
+                                </div>
+                                {% endwith %}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        {# on wide screens Leave sits under Members; on phones it moves to the very end (below) #}
+        {% if members|length > 1 %}
+            <div class="d-none d-xl-block">{% include "households/_leave.html" %}</div>
+        {% endif %}
+    </div>
+
+    <div class="col-xl-5 d-flex flex-column gap-3">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Invite someone</h2>
+                <p class="small text-secondary">Share this code. Anyone who enters it joins your household and shares your pantry.</p>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <code class="fs-4 fw-semibold px-3 py-1 bg-body-tertiary rounded text-body" data-invite-code>{{ invite_code }}</code>
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                            data-copy-invite>Copy</button>
+                    {% if is_owner %}
+                        <form method="post" action="{% url 'households:new_code' %}" data-new-code>
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">New code</button>
+                        </form>
+                    {% endif %}
+                </div>
+                <p class="small text-secondary mb-0">Works until <span data-invite-until>{{ household.invite_expires_at|date:"j M" }}</span></p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Join another household</h2>
+                <form method="post" action="{% url 'households:join' %}"
+                      {% if members|length == 1 %}onsubmit="return confirm(this.bring_pantry.checked ? 'Join this household? Your pantry and saved recipes come with you (matching items are added together). Your planned and cooked meals will be deleted.' : 'Join this household and start fresh? Your pantry, saved recipes and planned and cooked meals will be deleted.');"{% else %}onsubmit="return confirm('Join that household? Your pantry stays here with everyone else. Private recipes you made come with you.');"{% endif %}>
+                    {% csrf_token %}
+                    <div class="input-group mb-1">
+                        {{ join_form.code }}
+                        <button type="submit" class="btn btn-primary">Join</button>
+                    </div>
+                    {% if members|length == 1 %}
+                        <div class="form-check mt-2">
+                            {{ join_form.bring_pantry }}
+                            <label class="form-check-label small" for="{{ join_form.bring_pantry.id_for_label }}">{{ join_form.bring_pantry.label }}</label>
+                        </div>
+                    {% endif %}
+                </form>
+                <p class="small text-secondary mb-0">
+                    {% if members|length == 1 %}Recipes you made always come with you. Planned and cooked meals don't move.
+                    {% else %}Your pantry stays here with everyone else. Private recipes you made come with you.{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {% if members|length > 1 %}
+        <div class="col-12 d-xl-none">{% include "households/_leave.html" %}</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/invite_code.js' %}" defer></script>
+{% endblock %}
