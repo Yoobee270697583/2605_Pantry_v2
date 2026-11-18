@@ -9,6 +9,8 @@
     <div class="d-flex flex-wrap gap-2">
         {# the phone nav only has "Recipes", so this is how phones get to Suggested Recipes #}
         <a href="{% url 'suggestions:index' %}" class="btn btn-outline-primary">What can I cook?</a>
+        {# like V1's Random Recipe button - a link, since opening a recipe doesn't change anything #}
+        <a href="{% url 'recipes:random' %}" class="btn btn-outline-primary">Random recipe</a>
         <a href="{% url 'recipes:create' %}" class="btn btn-primary">+ Create Recipe</a>
     </div>
 </div>
