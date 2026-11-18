@@ -50,7 +50,7 @@
                 </button>
                 <ul class="dropdown-menu shadow-sm">
                     <li><a class="dropdown-item" href="{% url 'households:index' %}">Household</a></li>
-                    <li><a class="dropdown-item" href="#">Settings</a></li>
+                    <li><a class="dropdown-item" href="{% url 'accounts:settings' %}">Settings</a></li>
                     <li>
                         {# Django 5 only allows logout via POST, so this is a form, not a link. #}
                         <form method="post" action="{% url 'account_logout' %}">

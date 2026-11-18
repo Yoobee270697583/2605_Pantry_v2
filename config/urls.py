@@ -23,6 +23,7 @@ urlpatterns = [
     path('', LoginView.as_view(), name='home'),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
+    path('settings/', include('accounts.urls')),
     path('kitchen/', include('kitchen.urls')),
     path('household/', include('households.urls')),
     path('pantry/', include('pantry.urls')),
