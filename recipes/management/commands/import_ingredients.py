@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from recipes.api_helper import fetch_ingredient_list
+from recipes.category_helper import guess_category
 from recipes.models import Ingredient, IngredientAlias
 
 # run with: python manage.py import_ingredients
@@ -36,7 +37,8 @@ class Command(BaseCommand):
                 continue
 
             # only the name, id and image come from here - the unit gets
-            # worked out by import_recipes and the USDA fields by the USDA import
+            # worked out by import_recipes, the USDA fields by the USDA import
+            # and the category just below
             ingredient, created = Ingredient.objects.update_or_create(
                 name=name,
                 defaults={
@@ -44,6 +46,15 @@ class Command(BaseCommand):
                     "image_url": item.get("strThumb") or "",
                 }
             )
+
+            # TheMealDB doesn't give a category, so work one out from the name.
+            # only for ingredients that don't have one yet, so a category
+            # someone fixed in the admin isn't overwritten
+            if ingredient.category == "other":
+                category = guess_category(ingredient.name)
+                if category != "other":
+                    ingredient.category = category
+                    ingredient.save(update_fields=["category"])
 
             if created:
                 created_count += 1

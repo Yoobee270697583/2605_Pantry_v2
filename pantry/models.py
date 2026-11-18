@@ -4,19 +4,8 @@ from django.db import models
 from households.models import Household
 from recipes.models import Ingredient
 
-# same categories as V1, so the wording stays the same everywhere
-CATEGORY_CHOICES = [
-    ("fruit_veg", "Fruit & Vegetables"),
-    ("meat_seafood", "Meat & Seafood"),
-    ("dairy_eggs", "Dairy & Eggs"),
-    ("pantry_staples", "Pantry Staples"),
-    ("frozen", "Frozen"),
-    ("bakery", "Bakery"),
-    ("herbs_spices", "Herbs & Spices"),
-    ("condiments", "Sauces & Condiments"),
-    ("drinks", "Drinks"),
-    ("other", "Other"),
-]
+# there's no category here - it belongs to the ingredient (Ingredient.category),
+# so every household sees the same one and nobody can file steak under Drinks
 
 # ============================================================================
 # DATABASE MODELS
@@ -33,7 +22,7 @@ class PantryItem(models.Model):
         related_name="pantry_items"
     )
 
-    # who added it - kept for the household activity feed (10.3) and for checking
+    # who added it kept for the household activity feed (10.3) and for checking
     # accuracy if numbers ever look wrong. SET_NULL so the item stays in the
     # household's pantry if that person's account is deleted
     added_by = models.ForeignKey(
@@ -44,7 +33,7 @@ class PantryItem(models.Model):
         related_name="pantry_items_added"
     )
 
-    # ingredient this refers to - must exist in the Ingredient table
+    # ingredient this refers to  must exist in the Ingredient table
     # PROTECT stops an ingredient being deleted while someone has it in their pantry
     ingredient = models.ForeignKey(
         Ingredient,
@@ -56,9 +45,6 @@ class PantryItem(models.Model):
     # so it lines up with RecipeIngredient.quantity - unlike V1, there's no
     # separate unit field the user can pick
     quantity = models.FloatField()
-
-    # item category e.g. fruit_veg - see CATEGORY_CHOICES
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
 
     # optional expiry date
     expiry_date = models.DateField(blank=True, null=True)
@@ -78,11 +64,6 @@ class PantryItem(models.Model):
             models.CheckConstraint(
                 condition=models.Q(quantity__gte=0),
                 name="pantry_quantity_not_negative",
-            ),
-            # category must be one of CATEGORY_CHOICES
-            models.CheckConstraint(
-                condition=models.Q(category__in=[value for value, label in CATEGORY_CHOICES]),
-                name="pantry_category_valid",
             ),
         ]
 
