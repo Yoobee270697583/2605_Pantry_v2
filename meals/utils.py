@@ -1,7 +1,22 @@
 from django.utils import timezone
 
 from pantry.models import PantryItem
+from recipes.utils import visible_recipes
 from suggestions.utils import STAPLES
+from .models import PlannedMeal
+
+
+def visible_plans(household):
+    """Returns the household's planned meals, leaving out any whose recipe it can't see any more.
+
+    That happens if another household makes its recipe private after this household planned it.
+    The plan is hidden, not deleted, so it comes back if the recipe is made public again - the
+    same as saved recipes. Planned Meals uses this, and My Kitchen and the shopping list should
+    too, so a private recipe can't show up anywhere for another household.
+    """
+    # visible_recipes leaves out other households' private recipes (see recipes/utils.py)
+    return PlannedMeal.objects.filter(household=household, recipe__in=visible_recipes(household))
+
 
 # taking a recipe's ingredients off the pantry when it's cooked.
 # replaces V1's subtract_recipe_ingredients_from_pantry - recipe lines and
