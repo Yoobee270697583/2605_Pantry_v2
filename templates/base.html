@@ -15,9 +15,10 @@
 
 {% comment %}
     NAV LINKS
-    Every href is "#" for now because no apps exist yet.
-    When an app is added, swap its "#" for {% url '<app>:index' %} — the
-    URL names below are suggestions, agree them with Adam.
+    Cooked Meals, Shopping Lists and Previous Orders don't have apps yet,
+    so they go to "Under construction" pages (under_construction in
+    config/urls.py). When one is built, swap its line there for the app's
+    urls - the names below (cooked:index etc.) stay the same.
 
     The "active" highlight works automatically: it compares the link's
     app name with request.resolver_match.app_name, so views don't need to
@@ -28,7 +29,11 @@
 
     <!-- Desktop / tablet: left sidebar (hidden below 768px) -->
     <nav class="pantry-sidebar d-none d-md-flex flex-column flex-shrink-0 border-end pantry-surface">
-        <a href="{% url 'kitchen:index' %}" class="pantry-logo text-decoration-none">Pantry</a> {# kitchen #}
+        {# the same jars icon as the login page. alt="" because the word Pantry is right next to it #}
+        <a href="{% url 'kitchen:index' %}" class="pantry-logo text-decoration-none d-flex align-items-center gap-2">
+            <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="32" height="28">
+            Pantry
+        </a> {# kitchen #}
 
         <ul class="nav flex-column flex-grow-1 pantry-sidebar-links">
             <li class="nav-item"><a href="{% url 'kitchen:index' %}" class="nav-link {% if app == 'kitchen' %}active{% endif %}">My Kitchen</a></li>                    {# kitchen:index #}
@@ -36,9 +41,9 @@
             <li class="nav-item"><a href="{% url 'recipes:index' %}" class="nav-link {% if app == 'recipes' %}active{% endif %}">My Recipes</a></li>                    {# recipes:index #}
             <li class="nav-item"><a href="{% url 'suggestions:index' %}" class="nav-link {% if app == 'suggestions' %}active{% endif %}">Suggested Recipes</a></li>     {# suggestions:index #}
             <li class="nav-item"><a href="{% url 'planned:index' %}" class="nav-link {% if app == 'planned' %}active{% endif %}">Planned Meals</a></li>                 {# planned:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'cooked' %}active{% endif %}">Cooked Meals</a></li>                                           {# cooked:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'shopping' %}active{% endif %}">Shopping Lists</a></li>                                       {# shopping:index #}
-            <li class="nav-item"><a href="#" class="nav-link {% if app == 'orders' %}active{% endif %}">Previous Orders</a></li>                                        {# orders:index #}
+            <li class="nav-item"><a href="{% url 'cooked:index' %}" class="nav-link {% if app == 'cooked' %}active{% endif %}">Cooked Meals</a></li>                    {# cooked:index #}
+            <li class="nav-item"><a href="{% url 'shopping:index' %}" class="nav-link {% if app == 'shopping' %}active{% endif %}">Shopping Lists</a></li>              {# shopping:index #}
+            <li class="nav-item"><a href="{% url 'orders:index' %}" class="nav-link {% if app == 'orders' %}active{% endif %}">Previous Orders</a></li>                 {# orders:index #}
         </ul>
 
         <!-- Account menu (replaces V1's custom toggle script with a Bootstrap dropup) -->
@@ -86,7 +91,7 @@
             <a href="{% url 'pantry:index' %}" class="nav-link {% if app == 'pantry' %}active{% endif %}">Pantry</a>
             <a href="{% url 'recipes:index' %}" class="nav-link {% if app == 'recipes' or app == 'suggestions' %}active{% endif %}">Recipes</a>     {# recipes:index #}
             <a href="{% url 'planned:index' %}" class="nav-link {% if app == 'planned' or app == 'cooked' %}active{% endif %}">Meals</a>            {# planned:index #}
-            <a href="#" class="nav-link {% if app == 'shopping' or app == 'orders' %}active{% endif %}">Shopping</a>                                {# shopping:index #}
+            <a href="{% url 'shopping:index' %}" class="nav-link {% if app == 'shopping' or app == 'orders' %}active{% endif %}">Shopping</a>      {# shopping:index #}
         </div>
     </nav>
 
