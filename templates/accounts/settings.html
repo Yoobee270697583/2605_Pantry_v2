@@ -47,5 +47,34 @@
             </div>
         </div>
     </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-1">Household</h2>
+                <p class="small text-secondary mb-3">
+                    {{ member_count }} member{{ member_count|pluralize }} · {% if is_owner %}you're the owner{% else %}you're a member{% endif %}
+                </p>
+                {% if is_owner %}
+                    {# the same rename as the Household page. "next" brings you back here instead of the Household page #}
+                    <form method="post" action="{% url 'households:rename' %}" class="mb-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <label for="{{ rename_form.name.id_for_label }}" class="form-label">Household name</label>
+                        <div class="d-flex gap-2">
+                            {{ rename_form.name }}
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="small text-secondary mb-0">Household name</p>
+                    <p class="mb-1 text-break">{{ household.name }}</p>
+                    <p class="small text-secondary mb-3">Only the owner can rename it.</p>
+                {% endif %}
+                <p class="small text-secondary mb-2">Invite people, see who's in it, or leave it on the Household page.</p>
+                <a href="{% url 'households:index' %}" class="btn btn-outline-primary btn-sm">Manage household</a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
