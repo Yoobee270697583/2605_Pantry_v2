@@ -49,6 +49,7 @@
                     <span class="pantry-account-name text-truncate">{{ user.first_name|default:user.username }}</span>
                 </button>
                 <ul class="dropdown-menu shadow-sm">
+                    <li><a class="dropdown-item" href="{% url 'households:index' %}">Household</a></li>
                     <li><a class="dropdown-item" href="#">Settings</a></li>
                     <li>
                         {# Django 5 only allows logout via POST, so this is a form, not a link. #}

@@ -1,0 +1,63 @@
+{% comment %}
+    the household card on My Kitchen (data from the household_card tag in households/templatetags/household_tags.py).
+    living alone: the invite code and the join box, since that's when they're needed.
+    once there are members: one line with a Manage button.
+{% endcomment %}
+{% load static %}
+<div class="card{% if hh.living_alone %} h-100{% endif %}">
+    {% if hh.living_alone %}
+        <div class="card-body">
+            <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-0">{{ hh.household.name }}</h2>
+                    <span class="small text-secondary">Just you for now</span>
+                </div>
+                <a href="{% url 'households:index' %}" class="btn btn-outline-primary btn-sm">Manage</a>
+            </div>
+
+            <h3 class="h6">Share your pantry</h3>
+            <p class="small text-secondary">Give this code to someone you live with so you share one pantry.</p>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <code class="fs-4 fw-semibold px-3 py-1 bg-body-tertiary rounded text-body" data-invite-code>{{ hh.invite_code }}</code>
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        data-copy-invite>Copy</button>
+                {% if hh.is_owner %}
+                    <form method="post" action="{% url 'households:new_code' %}" data-new-code>
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">New code</button>
+                    </form>
+                {% endif %}
+            </div>
+            <p class="small text-secondary">Works until <span data-invite-until>{{ hh.household.invite_expires_at|date:"j M" }}</span></p>
+
+            <hr>
+
+            <h3 class="h6">Got a code?</h3>
+            <form method="post" action="{% url 'households:join' %}"
+                  onsubmit="return confirm(this.bring_pantry.checked ? 'Join this household? Your pantry and saved recipes come with you (matching items are added together). Your planned and cooked meals will be deleted.' : 'Join this household and start fresh? Your pantry, saved recipes and planned and cooked meals will be deleted.');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <div class="input-group mb-1">
+                    {{ hh.join_form.code }}
+                    <button type="submit" class="btn btn-primary">Join</button>
+                </div>
+                <div class="form-check mt-2">
+                    {{ hh.join_form.bring_pantry }}
+                    <label class="form-check-label small" for="{{ hh.join_form.bring_pantry.id_for_label }}">{{ hh.join_form.bring_pantry.label }}</label>
+                </div>
+            </form>
+            <p class="small text-secondary mb-0">Recipes you made always come with you. Planned and cooked meals don't move.</p>
+        </div>
+    {% else %}
+        <div class="card-body d-flex align-items-center gap-3">
+            {% include "households/_avatars.html" with members=hh.members %}
+            <div class="flex-grow-1 min-w-0">
+                <h2 class="h6 mb-0 text-truncate">{{ hh.household.name }}</h2>
+                <span class="small text-secondary">{{ hh.members|length }} members · {% if hh.is_owner %}you're the owner{% else %}you're a member{% endif %}</span>
+            </div>
+            <a href="{% url 'households:index' %}" class="btn btn-outline-primary btn-sm">Manage</a>
+        </div>
+    {% endif %}
+</div>
+{% if hh.living_alone %}<script src="{% static 'js/invite_code.js' %}" defer></script>{% endif %}

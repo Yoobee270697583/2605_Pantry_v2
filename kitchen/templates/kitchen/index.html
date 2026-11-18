@@ -1,7 +1,14 @@
 {% extends "base.html" %}
+{% load household_tags %}
 
 {% block title %}My Kitchen · Pantry{% endblock %}
 
 {% block content %}
-    <h1>My Kitchen</h1>
+    <h1 class="mb-4">My Kitchen</h1>
+
+    {# the household card - households/templatetags/household_tags.py #}
+    {% household_card as hh %}
+    <div class="row g-3">
+        <div class="col-12 col-lg-6">{% include "households/_kitchen_card.html" %}</div>
+    </div>
 {% endblock %}
