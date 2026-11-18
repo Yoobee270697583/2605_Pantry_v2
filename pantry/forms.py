@@ -6,23 +6,21 @@ from .models import PantryItem
 
 class PantryItemForm(forms.ModelForm):
     """Used for both adding and editing a pantry item. The ingredient is picked
-    from the Ingredients tab (add) or fixed (edit), so it isn't a form field."""
+    from the Ingredients tab (add) or fixed (edit), so it isn't a form field. """
+  
 
     class Meta:
         model = PantryItem
-        fields = ["quantity", "category", "expiry_date"]
+        fields = ["quantity", "expiry_date"]
         widgets = {
             # step any lets people enter things like 1.5
             "quantity": forms.NumberInput(attrs={"class": "form-control", "step": "any", "min": "0"}),
-            "category": forms.Select(attrs={"class": "form-select"}),
             # type=date gives the browser's date picker
             "expiry_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # placeholder option instead of Django's default "---------"
-        self.fields["category"].choices = [("", "Select a category")] + list(self.fields["category"].choices)[1:]
         # stops the date picker offering past dates - clean_expiry_date is the real check
         self.fields["expiry_date"].widget.attrs["min"] = timezone.localdate().isoformat()
 

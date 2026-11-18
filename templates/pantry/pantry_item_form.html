@@ -34,12 +34,10 @@
                         </div>
                     </div>
 
+                    {# the category comes from the ingredient, so it's shown here instead of being picked #}
                     <div class="mb-3">
-                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
-                        {{ form.category }}
-                        {% for error in form.category.errors %}
-                            <div class="invalid-feedback d-block">{{ error }}</div>
-                        {% endfor %}
+                        <span class="form-label d-block">Category</span>
+                        <p class="form-control-plaintext py-0 mb-0">{{ ingredient.get_category_display }}</p>
                     </div>
 
                     <div class="mb-4">

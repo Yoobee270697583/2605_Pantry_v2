@@ -18,8 +18,11 @@ class IngredientAliasInline(admin.TabularInline):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ["name", "unit"]
-    list_filter = ["unit"]
+    list_display = ["name", "unit", "category"]
+    list_filter = ["unit", "category"]
+    # a wrong category guess can be fixed straight from the list, and it
+    # changes for every household that has that ingredient
+    list_editable = ["category"]
     # aliases__name means searching "yellow onion" still finds Onion
     search_fields = ["name", "aliases__name"]
     inlines = [IngredientAliasInline]

@@ -9,6 +9,22 @@ UNIT_CHOICES = [
     ("each", "Each"),
 ]
 
+# the pantry category of an ingredient same wording as V1. set from the
+# ingredient's name when it's imported (recipes/category_helper.py), never
+# picked by users, so a household can't file sirloin steak under Drinks
+CATEGORY_CHOICES = [
+    ("fruit_veg", "Fruit & Vegetables"),
+    ("meat_seafood", "Meat & Seafood"),
+    ("dairy_eggs", "Dairy & Eggs"),
+    ("pantry_staples", "Pantry Staples"),
+    ("frozen", "Frozen"),
+    ("bakery", "Bakery"),
+    ("herbs_spices", "Herbs & Spices"),
+    ("condiments", "Sauces & Condiments"),
+    ("drinks", "Drinks"),
+    ("other", "Other"),
+]
+
 # ============================================================================
 # DATABASE MODELS
 # ============================================================================
@@ -29,6 +45,11 @@ class Ingredient(models.Model):
     # the recipe import works out which one fits best
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="each")
 
+    # pantry category e.g. meat_seafood - see CATEGORY_CHOICES. worked out from
+    # the name by import_ingredients, fixable in the admin if a guess is wrong.
+    # db_index because the My Pantry category filter searches on it
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default="other", db_index=True)
+
     # fdcId from USDA FoodData Central - only filled in for the ingredients
     # we've linked to USDA, empty for everything else
     fdc_id = models.IntegerField(blank=True, null=True)
@@ -41,6 +62,13 @@ class Ingredient(models.Model):
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            # category must be one of CATEGORY_CHOICES, even if it's set outside the form
+            models.CheckConstraint(
+                condition=models.Q(category__in=[value for value, label in CATEGORY_CHOICES]),
+                name="ingredient_category_valid",
+            ),
+        ]
 
     def __str__(self):
         return self.name

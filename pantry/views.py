@@ -1,13 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from households.utils import get_household
-from recipes.models import Ingredient
+from recipes.models import CATEGORY_CHOICES, Ingredient
 from .forms import PantryItemForm
-from .models import CATEGORY_CHOICES, PantryItem
+from .models import PantryItem
 
 # viewing/searching the pantry, browsing ingredients, and adding/editing/deleting pantry items
 
@@ -25,11 +26,21 @@ def index(request):
     }
 
     if active_tab == "ingredients":
-        # only search once the user has typed something - the full list is huge
-        ingredients = []
+        # every ingredient A-Z, so people can browse by category or search
+        selected_category = request.GET.get("category", "").strip()
+        ingredients = Ingredient.objects.all()
+
         if search_query:
-            ingredients = Ingredient.objects.filter(name__icontains=search_query)
-        context["ingredients"] = ingredients
+            ingredients = ingredients.filter(name__icontains=search_query)
+        if selected_category:
+            ingredients = ingredients.filter(category=selected_category)
+
+        # 25 cards a page
+        page = Paginator(ingredients, 25).get_page(request.GET.get("page"))
+
+        context["ingredients"] = page
+        context["page"] = page
+        context["selected_category"] = selected_category
 
     else:
         selected_category = request.GET.get("category", "").strip()
@@ -41,7 +52,8 @@ def index(request):
         if search_query:
             items = items.filter(ingredient__name__icontains=search_query)
         if selected_category:
-            items = items.filter(category=selected_category)
+            # the category comes from the ingredient, not the pantry item
+            items = items.filter(ingredient__category=selected_category)
 
         context["pantry_items"] = items
         context["selected_category"] = selected_category
