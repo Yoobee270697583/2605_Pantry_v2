@@ -9,8 +9,6 @@
     <div class="d-flex flex-wrap gap-2">
         {# the phone nav only has "Recipes", so this is how phones get to Suggested Recipes #}
         <a href="{% url 'suggestions:index' %}" class="btn btn-outline-primary">What can I cook?</a>
-        {# like V1's Random Recipe button - a link, since opening a recipe doesn't change anything #}
-        <a href="{% url 'recipes:random' %}" class="btn btn-outline-primary">Random recipe</a>
         <a href="{% url 'recipes:create' %}" class="btn btn-primary">+ Create Recipe</a>
     </div>
 </div>
@@ -32,13 +30,19 @@
     </li>
 </ul>
 
-<p class="text-body-secondary">
-    {{ total }} {% if active_tab == 'saved' %}saved {% elif active_tab == 'created' %}created {% endif %}recipe{{ total|pluralize }}
-    {% if search_query or selected_category or selected_area %}
-        {# clearing the search keeps you on the same tab #}
-        found <a href="{% url 'recipes:index' %}{% if active_tab != 'all' %}?tab={{ active_tab }}{% endif %}" class="ms-2">Clear search</a>
+<div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+    <p class="text-body-secondary mb-0">
+        {{ total }} {% if active_tab == 'saved' %}saved {% elif active_tab == 'created' %}created {% endif %}recipe{{ total|pluralize }}
+        {% if search_query or selected_category or selected_area %}
+            {# clearing the search keeps you on the same tab #}
+            found <a href="{% url 'recipes:index' %}{% if active_tab != 'all' %}?tab={{ active_tab }}{% endif %}" class="ms-2">Clear search</a>
+        {% endif %}
+    </p>
+    {# like V1's Random Recipe button, but a small link so it doesn't take over the page. it picks from every recipe, so only on All recipes #}
+    {% if active_tab == 'all' %}
+        <a href="{% url 'recipes:random' %}" class="small link-secondary"><span class="fs-5" aria-hidden="true">&#9860;</span> Random recipe</a>
     {% endif %}
-</p>
+</div>
 
 {# GET form so the search ends up in the url and the page links can keep it #}
 <form method="get" class="row g-2 mb-4">
