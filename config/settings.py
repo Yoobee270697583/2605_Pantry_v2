@@ -44,6 +44,9 @@ if os.environ.get("USE_HTTPS", "False") == "True":
     # login and form cookies only ever travel over https
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # allauth uses this for the address Google sends people back to after they log in,
+    # so on AWS it's always the https one
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 
 
 # Application definition
@@ -59,6 +62,9 @@ INSTALLED_APPS = [
     'accounts',
     'allauth',
     'allauth.account',
+    # "Continue with Google" on the login and sign up pages
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'kitchen',
     'households',
     'pantry',
@@ -173,3 +179,19 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 
 LOGIN_URL = "home"
 LOGIN_REDIRECT_URL = "kitchen:index"
+
+# "Continue with Google". The keys come from Google Cloud (Google Auth Platform > Clients) and go in
+# .env locally, or Elastic Beanstalk on AWS - never in the code. No GOOGLE_CLIENT_ID means no Google
+# button at all, so a missing key can't give anyone a broken button
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        # only the Google account's name and email address
+        "SCOPE": ["profile", "email"],
+        "APPS": [],
+    },
+}
+if os.environ.get("GOOGLE_CLIENT_ID"):
+    SOCIALACCOUNT_PROVIDERS["google"]["APPS"].append({
+        "client_id": os.environ["GOOGLE_CLIENT_ID"],
+        "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+    })
