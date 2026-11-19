@@ -1,0 +1,22 @@
+{% load socialaccount %}
+{% comment %}
+    Overrides allauth's "Or use a third-party" part of the Sign In and Sign Up pages.
+    allauth's own version is a plain "Google" link that goes to an extra "Continue?" page first.
+    This is one button that posts straight to Google - a form with the CSRF token, the same as
+    allauth's Continue page. With no Google keys (.env locally, Elastic Beanstalk on AWS) there are
+    no providers, so nothing shows here at all.
+{% endcomment %}
+{% get_providers as socialaccount_providers %}
+{% if socialaccount_providers %}
+    <div class="d-flex align-items-center gap-3 my-3">
+        <hr class="flex-grow-1 my-0">
+        <span class="small text-body-secondary">or</span>
+        <hr class="flex-grow-1 my-0">
+    </div>
+    {% for provider in socialaccount_providers %}
+        <form method="post" action="{% provider_login_url provider process='login' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary w-100">Continue with {{ provider.name }}</button>
+        </form>
+    {% endfor %}
+{% endif %}
