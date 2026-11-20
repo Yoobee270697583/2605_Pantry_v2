@@ -85,8 +85,9 @@
                 <div class="card-body">
                     <h2 class="h5 mb-1">Ingredients</h2>
                     <p class="form-text mt-0 mb-3">
-                        Start typing to pick from our ingredient list. Amounts are in the unit shown next to the box,
-                        so they work with your pantry. Leave the amount empty for things like salt to taste.
+                        Start typing to pick from our ingredient list. The unit starts on the one your pantry uses,
+                        but you can change it, e.g. to tsp or cup, and we'll convert it. Leave the amount empty for
+                        things like salt to taste.
                     </p>
 
                     {# errors about the whole list, e.g. no ingredients or the same one twice #}
@@ -130,14 +131,17 @@
 
 {% block extra_js %}
 <script>
-    // lowercase ingredient name -> its unit, e.g. "onion" -> "Each"
+    // lowercase ingredient name -> its own unit, e.g. "onion" -> "each"
     var units = JSON.parse(document.getElementById("ingredient-units").textContent);
     var lineList = document.getElementById("ingredient-lines");
 
-    // shows the unit for whatever is typed in a line's ingredient box
+    // picks the ingredient's own unit in the dropdown, unless someone has already chosen one themselves
     function showUnit(line) {
         var name = line.querySelector(".ingredient-name").value.trim().toLowerCase();
-        line.querySelector(".ingredient-unit").textContent = units[name] || "–";
+        var unitBox = line.querySelector(".ingredient-unit");
+        if (!unitBox.dataset.chosen && units[name]) {
+            unitBox.value = units[name];
+        }
     }
 
     // listening on the whole list means lines added with the button work too
@@ -147,12 +151,19 @@
         }
     });
 
+    // once someone picks a unit, typing a different ingredient doesn't change it back
+    lineList.addEventListener("change", function (event) {
+        if (event.target.classList.contains("ingredient-unit")) {
+            event.target.dataset.chosen = "true";
+        }
+    });
+
     // the x button empties the line and hides it. empty lines are ignored when saving
     lineList.addEventListener("click", function (event) {
         var button = event.target.closest(".remove-line");
         if (button) {
             var line = button.closest(".ingredient-line");
-            line.querySelectorAll("input").forEach(function (input) {
+            line.querySelectorAll("input, select").forEach(function (input) {
                 input.value = "";
             });
             line.classList.add("d-none");
@@ -168,8 +179,15 @@
         lineList.lastElementChild.querySelector(".ingredient-name").focus();
     });
 
-    // fills in the units for lines that already have an ingredient, e.g. when the form comes back with an error
-    lineList.querySelectorAll(".ingredient-line").forEach(showUnit);
+    // lines that already have a unit (editing, or the form came back with an error) keep it.
+    // the rest get their ingredient's own unit
+    lineList.querySelectorAll(".ingredient-line").forEach(function (line) {
+        var unitBox = line.querySelector(".ingredient-unit");
+        if (unitBox.value) {
+            unitBox.dataset.chosen = "true";
+        }
+        showUnit(line);
+    });
 
     // shows the photo as soon as a link is pasted
     var imageBox = document.getElementById("id_image_url");
