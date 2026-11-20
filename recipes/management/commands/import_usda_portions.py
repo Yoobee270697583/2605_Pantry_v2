@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from recipes.grams_lists import BORROWED_WEIGHTS
 from recipes.models import Ingredient
 from recipes.usda_helper import get_foods, get_portion_weights
 
@@ -50,6 +51,43 @@ USDA_INGREDIENTS = {
     "Mint": 173475,                 # Spearmint, fresh
     "Cardamom": 170919,             # Spices, cardamom
     "Salt": 173468,                 # Salt, table
+
+    # dry spices - stored in grams (recipes/grams_lists.py), so they need these
+    # to convert recipe amounts like "1 tsp"
+    "Black Pepper": 170931,         # Spices, pepper, black
+    "Cumin": 170923,                # Spices, cumin seed
+    "Cumin Seeds": 170923,          # Spices, cumin seed
+    "Cinnamon": 171320,             # Spices, cinnamon, ground
+    "Paprika": 171329,              # Spices, paprika
+    "Smoked Paprika": 171329,       # Spices, paprika
+    "Allspice": 171315,             # Spices, allspice, ground
+    "Oregano": 171328,              # Spices, oregano, dried
+    "Turmeric": 172231,             # Spices, turmeric, ground
+    "Chilli Powder": 171319,        # Spices, chili powder
+    "Nutmeg": 171326,               # Spices, nutmeg, ground
+    "Cayenne Pepper": 170932,       # Spices, pepper, red or cayenne
+    "Ground Ginger": 170926,        # Spices, ginger, ground
+    "Curry Powder": 170924,         # Spices, curry powder
+    "Garlic Powder": 171325,        # Spices, garlic powder
+
+    # baking
+    "Baking Powder": 172804,        # Leavening agents, baking powder, double-acting, straight phosphate
+    "Bicarbonate Of Soda": 175040,  # Leavening agents, baking soda
+
+    # rarer ingredients stored in grams - fdc ids looked up on fdc.nal.usda.gov (SR Legacy)
+    "Bamboo Shoot": 169212,           # bamboo shoots
+    "Broad Beans": 170377,            # broad beans
+    "Capers": 172238,                 # capers
+    "Flank Steak": 169433,            # beef flank
+    "Ground Onion": 171327,           # onion powder
+    "Lemon Zest": 167749,             # lemon peel
+    "Mung Bean Sprouts": 169957,      # mung bean sprouts
+    "Pimento Stuffed Olives": 169096, # green olives
+    "Pineapple Chunks": 167767,       # canned pineapple
+    "Raw Yucca": 169985,              # cassava
+    "Rhubarb": 167758,                # rhubarb
+    "Sour Pork Sausage": 174584,      # pork sausage
+    "Tofu": 172475,                   # firm tofu
 
     # dairy
     "Milk": 171265,                 # Milk, whole, 3.25% milkfat
@@ -125,6 +163,30 @@ class Command(BaseCommand):
             ingredient.save()
             updated += 1
 
+        borrowed = self.copy_borrowed_weights()
+
         self.stdout.write(self.style.SUCCESS(
-            f"saved USDA weights for {updated} ingredients"
+            f"saved USDA weights for {updated} ingredients, and copied them to {borrowed} similar ones"
         ))
+
+    def copy_borrowed_weights(self):
+        """Gives each ingredient in BORROWED_WEIGHTS (grams_lists.py) the cup and tbsp weights of the similar ingredient it names."""
+        copied = 0
+
+        for name, similar_name in BORROWED_WEIGHTS.items():
+            ingredient = Ingredient.objects.filter(name__iexact=name).first()
+            similar = Ingredient.objects.filter(name__iexact=similar_name).first()
+
+            if ingredient is None or similar is None:
+                self.stdout.write(self.style.WARNING(
+                    f"couldnt copy weights from '{similar_name}' to '{name}' - one of them isnt an ingredient"
+                ))
+                continue
+
+            # only cup and tbsp - "each" doesn't carry over (one cashew isn't one almond)
+            ingredient.grams_per_cup = similar.grams_per_cup
+            ingredient.grams_per_tbsp = similar.grams_per_tbsp
+            ingredient.save(update_fields=["grams_per_cup", "grams_per_tbsp"])
+            copied += 1
+
+        return copied

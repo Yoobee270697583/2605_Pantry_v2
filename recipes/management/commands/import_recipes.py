@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from recipes.api_helper import search_recipes_by_letter, get_ingredients
 from recipes.models import Ingredient, IngredientAlias, Recipe, RecipeIngredient
+from recipes.grams_lists import STORE_IN_GRAMS
 from recipes.unit_helper import parse_measure, to_base, convert_to_ingredient_unit
 
 # run with: python manage.py import_recipes
@@ -116,10 +117,17 @@ class Command(BaseCommand):
 
         for ingredient in set(ingredients.values()):
             counts = own_counts.get(ingredient.id) or alias_counts.get(ingredient.id)
-            if not counts:
-                continue
 
-            best_unit = counts.most_common(1)[0][0]
+            # dry goods like salt and cumin are measured in tsp, but bought by weight -
+            # see recipes/grams_lists.py. only once they have a USDA weight,
+            # or "1 tsp" couldn't be converted and those lines wouldn't be tracked
+            has_weight = ingredient.grams_per_cup or ingredient.grams_per_tbsp
+            if ingredient.name in STORE_IN_GRAMS and has_weight:
+                best_unit = "g"
+            elif counts:
+                best_unit = counts.most_common(1)[0][0]
+            else:
+                continue
 
             if ingredient.id not in used_ids and ingredient.unit != best_unit:
                 ingredient.unit = best_unit

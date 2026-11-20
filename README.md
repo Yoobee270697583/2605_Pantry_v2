@@ -71,6 +71,7 @@ python manage.py import_ingredients
 python manage.py merge_ingredients
 python manage.py import_usda_portions
 python manage.py import_recipes
+python manage.py store_in_grams
 ```
 
 - `import_ingredients` loads TheMealDB's ingredient list
@@ -78,8 +79,9 @@ python manage.py import_recipes
 - `import_usda_portions` adds USDA gram weights for common ingredients, so amounts like "1 cup flour" can be converted. The `DEMO_KEY` from `.env.example` works for this
 - `import_ingredients` also sets each ingredient's pantry category (Fruit & Vegetables, Meat & Seafood...) from its name, since TheMealDB doesn't give one. Fix a wrong one in the admin under Ingredients. After adding words to `recipes/category_helper.py`, run `python manage.py categorise_ingredients` to apply them to ingredients still marked Other
 - `import_recipes` loads TheMealDB's recipes. Amounts it can't convert into the ingredient's unit (like "1 bunch") still show on the recipe, they just aren't tracked against the pantry
+- `store_in_grams` stores dry goods like salt, sugar and cumin in grams instead of ml (the lists are in `recipes/grams_lists.py`), converting the recipe lines and pantry items that use them. It also re-converts recipe lines that were saved as not tracked before their ingredient had a USDA weight
 
-They're all safe to run again. If you already have a database set up, just run `migrate`, `merge_ingredients` and `import_recipes` to pick up new ingredient names and recipes.
+They're all safe to run again. If you already have a database set up, just run `migrate`, `merge_ingredients`, `import_usda_portions`, `import_recipes` and `store_in_grams` to pick up new ingredient names, USDA weights and recipes.
 
 ### 6. Run the application
 
