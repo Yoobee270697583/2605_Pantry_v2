@@ -3,7 +3,7 @@ from django.utils import timezone
 from pantry.models import PantryItem
 from recipes.utils import visible_recipes
 from suggestions.utils import STAPLES
-from .models import PlannedMeal
+from .models import CookedMeal, PlannedMeal
 
 
 def visible_plans(household):
@@ -16,6 +16,15 @@ def visible_plans(household):
     """
     # visible_recipes leaves out other households' private recipes (see recipes/utils.py)
     return PlannedMeal.objects.filter(household=household, recipe__in=visible_recipes(household))
+
+
+def visible_cooked(household):
+    """Returns the household's cooked meals, leaving out any whose recipe it can't see any more.
+
+    The same rule as visible_plans - if another household makes its recipe private after this
+    household cooked it, the meal is hidden from the history, and comes back if it's made public again.
+    """
+    return CookedMeal.objects.filter(household=household, recipe__in=visible_recipes(household))
 
 
 # taking a recipe's ingredients off the pantry when it's cooked.

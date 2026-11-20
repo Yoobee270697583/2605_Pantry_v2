@@ -3,14 +3,15 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.timesince import timesince
 from django.views.decorators.http import require_POST
 
 from households.utils import get_household
 from recipes.utils import visible_recipes
 from .models import PlannedMeal, CookedMeal
-from .utils import deduct_recipe_from_pantry, visible_plans
+from .utils import deduct_recipe_from_pantry, visible_cooked, visible_plans
 
-# planning meals, and (later) marking them as cooked
+# planning meals, marking them as cooked, and the history of cooked meals
 
 
 def go_back(request, fallback):
@@ -102,3 +103,20 @@ def mark_as_cooked(request, plan_id):
         messages.warning(request, f"Not enough in your pantry for: {', '.join(short)}. Whatever you had has been used up.")
 
     return redirect("planned:index")
+
+
+@login_required
+def cooked_index(request):
+    """The Cooked Meals page. Shows every meal the household has cooked, newest first."""
+    household = get_household(request.user)
+
+    # newest first comes from CookedMeal's Meta ordering. visible_cooked leaves out meals whose
+    # recipe another household has since made private, and select_related gets each meal's
+    # recipe and who cooked it in the same query, instead of V1's Recipe.query.get() for every meal
+    cooked_meals = visible_cooked(household).select_related("recipe", "cooked_by")
+
+    for cooked in cooked_meals:
+        # how long ago it was cooked, for the card. depth=1 keeps it short - "3 days", not "3 days, 2 hours"
+        cooked.ago = timesince(cooked.cooked_at, depth=1)
+
+    return render(request, "meals/cooked.html", {"cooked_meals": cooked_meals})

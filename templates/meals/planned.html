@@ -4,7 +4,11 @@
 {% block title %}Planned Meals — Pantry{% endblock %}
 
 {% block content %}
-<h1 class="mb-0">Planned Meals</h1>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h1 class="mb-0">Planned Meals</h1>
+    {# the phone nav only has "Meals", so this is how phones get to Cooked Meals #}
+    <a href="{% url 'cooked:index' %}" class="btn btn-outline-primary">Cooked meals</a>
+</div>
 <p class="text-body-secondary mt-1">Meals your household is planning to cook.</p>
 
 {% if plans %}
