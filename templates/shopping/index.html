@@ -5,8 +5,79 @@
 
 {% block content %}
 <h1 class="mb-0">Shopping List</h1>
-<p class="text-body-secondary mt-1">Worked out from your <a href="{% url 'planned:index' %}">planned meals</a>, minus what's already in your pantry.</p>
+<p class="text-body-secondary mt-1">Worked out from your <a href="{% url 'planned:index' %}">planned meals</a>, minus what's already in your pantry. You can add your own items too.</p>
 
+<!-- ===================== ADD YOUR OWN ITEM ===================== -->
+<h2 class="h5">Add your own item</h2>
+{# a search, like the Ingredients tab on My Pantry, because every item has to be a real Ingredient #}
+<form method="get" action="{% url 'shopping:index' %}" class="row g-2 mb-3" role="search">
+    <div class="col-md">
+        <div class="input-group">
+            <input type="search" name="q" class="form-control" placeholder="Search ingredients..." value="{{ search_query }}" aria-label="Search for an ingredient to add to your shopping list">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </div>
+    {% if search_query %}
+        <div class="col-md-auto">
+            <a href="{% url 'shopping:index' %}" class="btn btn-outline-secondary w-100">Clear</a>
+        </div>
+    {% endif %}
+</form>
+
+{% if search_query %}
+    {% if found_ingredients %}
+        <div class="card mb-2">
+            <ul class="list-group list-group-flush">
+                {% for ingredient in found_ingredients %}
+                <li class="list-group-item">
+                    {# on a phone the amount box goes underneath the name, from 576px up it sits beside it #}
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if ingredient.image_url %}
+                                    <img src="{{ ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0" loading="lazy" onerror="this.style.visibility='hidden'">
+                                {% else %}
+                                    <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50">
+                                {% endif %}
+                                <div>
+                                    <div>{{ ingredient.name }}</div>
+                                    <div class="small text-body-secondary">
+                                        {{ ingredient.get_category_display }}{% if ingredient.on_list %} · {{ ingredient.on_list|floatformat:"-2" }} {{ ingredient.get_unit_display }} on your list already{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-5 col-md-6 col-lg-4 col-xl-3">
+                            <form method="post" action="{% url 'shopping:add' ingredient.id %}" class="d-flex gap-2">
+                                {% csrf_token %}
+                                {# comes back to this search afterwards (go_back in meals/views.py) #}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                {# the unit comes from the ingredient, so it's shown next to the box instead of being picked #}
+                                <div class="input-group input-group-sm">
+                                    {# things that are counted start at 1 and go up in whole ones #}
+                                    <input type="number" name="quantity" class="form-control"
+                                           {% if ingredient.unit == "each" %}step="1" min="1" value="1"{% else %}step="any" min="0.01" placeholder="Amount"{% endif %}
+                                           required aria-label="How much {{ ingredient.name }} to add">
+                                    <span class="input-group-text">{{ ingredient.get_unit_display }}</span>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                            </form>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if hidden_count %}
+            <p class="small text-secondary">And {{ hidden_count }} more. Type more of the name to find the one you want.</p>
+        {% endif %}
+    {% else %}
+        <p class="text-secondary">No ingredients found for "{{ search_query }}".</p>
+    {% endif %}
+{% endif %}
+
+<!-- ===================== FOR YOUR PLANNED MEALS ===================== -->
+<h2 class="h5 mt-4">For your planned meals</h2>
 {% if shopping_list %}
     <p class="text-body-secondary">{{ shopping_list|length }} thing{{ shopping_list|length|pluralize }} to buy for {{ planned_count }} planned meal{{ planned_count|pluralize }}</p>
 
@@ -66,8 +137,68 @@
 {% else %}
     {# close to the message V1 showed #}
     <p class="text-body-secondary">
-        Your shopping list is empty. Plan some meals to fill it.
+        Nothing here yet. Plan some meals to fill it.
         <a href="{% url 'recipes:index' %}" class="ms-2">Browse recipes</a>
     </p>
+{% endif %}
+
+<!-- ===================== YOUR OWN ITEMS ===================== -->
+{# only shown once something has been added - the search at the top is how you add the first one #}
+{% if own_items %}
+    <h2 class="h5 mt-4">Your own items</h2>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">Ingredient</th>
+                        <th scope="col" class="d-none d-md-table-cell">Category</th>
+                        <th scope="col" class="text-end">To buy</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in own_items %}
+                    {% with ingredient=item.ingredient %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                {% if ingredient.image_url %}
+                                    <img src="{{ ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 d-none d-sm-block" loading="lazy" onerror="this.style.visibility='hidden'">
+                                {% else %}
+                                    <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50 d-none d-sm-block">
+                                {% endif %}
+                                <div>
+                                    <div>{{ ingredient.name }}</div>
+                                    {# who added it, like "Planned by" on Planned Meals #}
+                                    <div class="small text-body-secondary">
+                                        {% if item.added_by == user %}
+                                            Added by you
+                                        {% elif item.added_by %}
+                                            Added by {{ item.added_by.first_name|default:item.added_by.username }}
+                                        {% else %}
+                                            {# added_by is empty when that person has deleted their account #}
+                                            Added by someone in your household
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="d-none d-md-table-cell">{{ ingredient.get_category_display }}</td>
+                        <td class="text-end text-nowrap fw-semibold">{{ item.quantity|floatformat:"-2" }} {{ ingredient.get_unit_display }}</td>
+                        <td class="text-end">
+                            {# remove has to be a POST form, so it can't be triggered by just visiting a link #}
+                            <form method="post" action="{% url 'shopping:remove' item.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 {% endif %}
 {% endblock %}
