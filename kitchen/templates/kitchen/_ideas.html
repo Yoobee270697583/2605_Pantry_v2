@@ -1,4 +1,4 @@
-{% load static %}
+{% load static amount_tags %}
 {% comment %}
     the 3 meal idea cards. its own file so "Other ideas" can fetch just this part
     (kitchen/views.py sends only this when the request comes from the button's JavaScript).
@@ -39,7 +39,7 @@
                                 {% for ingredient in idea.missing %}{{ ingredient.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
                         {% elif idea.low_on %}
                             <p class="small mb-0"><span class="text-warning-emphasis fw-semibold">Low on:</span>
-                                {% for low in idea.low_on %}{{ low.ingredient.name }} (need {{ low.need|floatformat:"-1" }}{% if low.ingredient.unit != "each" %} {{ low.ingredient.unit }}{% endif %}, have {{ low.have|floatformat:"-1" }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+                                {% for low in idea.low_on %}{{ low.ingredient.name }} (need {{ low.need|amount }}{% if low.ingredient.unit != "each" %} {{ low.ingredient.unit }}{% endif %}, have {{ low.have|amount }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
                         {% endif %}
 
                         <div class="mt-auto pt-2">
