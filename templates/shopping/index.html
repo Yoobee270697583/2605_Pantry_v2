@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static amount_tags %}
 
 {% block title %}Shopping List — Pantry{% endblock %}
 
@@ -58,7 +58,7 @@
                                 <div>
                                     <div>{{ ingredient.name }}</div>
                                     <div class="small text-body-secondary">
-                                        {{ ingredient.get_category_display }}{% if ingredient.on_list %} · {{ ingredient.on_list|floatformat:"-2" }} {{ ingredient.get_unit_display }} on your list already{% endif %}
+                                        {{ ingredient.get_category_display }}{% if ingredient.on_list %} · {{ ingredient.on_list|amount }} {{ ingredient.get_unit_display }} on your list already{% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -146,8 +146,9 @@
                                                 {# lines like "to taste" - there's no amount to take the pantry off #}
                                                 No amount in the recipe
                                             {% else %}
-                                                {# each ingredients don't say their unit here, like the Low on line on My Kitchen #}
-                                                Need {{ item.need|floatformat:"-2" }}{% if ingredient.unit != "each" %} {{ ingredient.get_unit_display }}{% endif %}, have {% if item.have %}{{ item.have|floatformat:"-2" }}{% else %}none{% endif %}
+                                                {# each ingredients don't say their unit here, like the Low on line on My Kitchen. #}
+                                                {# amount shows 7.5 instead of 7.50 - it's in recipes/templatetags/amount_tags.py #}
+                                                Need {{ item.need|amount }}{% if ingredient.unit != "each" %} {{ ingredient.get_unit_display }}{% endif %}, have {% if item.have %}{{ item.have|amount }}{% else %}none{% endif %}
                                             {% endif %}
                                         </div>
                                         {# which planned meals it's for, so it's clear why it's on the list #}
@@ -158,7 +159,7 @@
                             {# the category comes from the ingredient, like My Pantry #}
                             <td class="d-none d-lg-table-cell">{{ ingredient.get_category_display }}</td>
                             <td class="text-end text-nowrap fw-semibold d-none d-sm-table-cell">
-                                {% if item.to_buy is None %}Some{% else %}{{ item.to_buy|floatformat:"-2" }} {{ ingredient.get_unit_display }}{% endif %}
+                                {% if item.to_buy is None %}Some{% else %}{{ item.to_buy|amount }} {{ ingredient.get_unit_display }}{% endif %}
                             </td>
                             <td class="text-end">
                                 {# the box sits on top of the button until the screen is wide enough for them side by side #}
@@ -166,7 +167,7 @@
                                     {# starts as the amount to buy. it's empty when the recipe gives no amount, so you type what you bought #}
                                     <div class="input-group input-group-sm shopping-amount flex-shrink-0">
                                         <input type="number" name="planned_{{ ingredient.id }}" class="form-control" data-amount
-                                               value="{% if item.to_buy is not None %}{{ item.to_buy|floatformat:"-2" }}{% endif %}"
+                                               value="{% if item.to_buy is not None %}{{ item.to_buy|amount }}{% endif %}"
                                                {% if ingredient.unit == "each" %}step="1" min="1"{% else %}step="any" min="0.01"{% endif %}
                                                placeholder="Amount" aria-label="How much {{ ingredient.name }} to add to your pantry">
                                         <span class="input-group-text">{{ ingredient.get_unit_display }}</span>
@@ -235,12 +236,12 @@
                                 </div>
                             </td>
                             <td class="d-none d-lg-table-cell">{{ ingredient.get_category_display }}</td>
-                            <td class="text-end text-nowrap fw-semibold d-none d-sm-table-cell">{{ item.quantity|floatformat:"-2" }} {{ ingredient.get_unit_display }}</td>
+                            <td class="text-end text-nowrap fw-semibold d-none d-sm-table-cell">{{ item.quantity|amount }} {{ ingredient.get_unit_display }}</td>
                             <td class="text-end">
                                 <div class="d-flex flex-column flex-xl-row justify-content-end gap-1">
                                     <div class="input-group input-group-sm shopping-amount flex-shrink-0">
                                         <input type="number" name="own_{{ ingredient.id }}" class="form-control" data-amount
-                                               value="{{ item.quantity|floatformat:"-2" }}"
+                                               value="{{ item.quantity|amount }}"
                                                {% if ingredient.unit == "each" %}step="1" min="1"{% else %}step="any" min="0.01"{% endif %}
                                                placeholder="Amount" aria-label="How much {{ ingredient.name }} to add to your pantry">
                                         <span class="input-group-text">{{ ingredient.get_unit_display }}</span>

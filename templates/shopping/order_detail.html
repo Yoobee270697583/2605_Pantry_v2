@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static amount_tags %}
 
 {% block title %}Order from {{ order.ordered_at|date:"j M Y" }} — Pantry{% endblock %}
 
@@ -48,7 +48,7 @@
                     </td>
                     <td class="d-none d-md-table-cell">{{ ingredient.get_category_display }}</td>
                     {# the unit is the one saved with the order, not the ingredient's - see OrderItem in shopping/models.py #}
-                    <td class="text-end text-nowrap fw-semibold">{{ item.quantity|floatformat:"-2" }} {{ item.get_unit_display }}</td>
+                    <td class="text-end text-nowrap fw-semibold">{{ item.quantity|amount }} {{ item.get_unit_display }}</td>
                 </tr>
                 {% endwith %}
                 {% endfor %}
