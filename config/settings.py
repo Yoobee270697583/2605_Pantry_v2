@@ -149,7 +149,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# New Zealand time. with UTC the site's "today" was still yesterday for the whole NZ morning, so
+# expiry dates were a day out. times in the database are still saved in UTC (USE_TZ below)
+TIME_ZONE = 'Pacific/Auckland'
 
 USE_I18N = True
 
