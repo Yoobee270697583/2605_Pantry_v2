@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static household_tags %}
+{% load static household_tags amount_tags %}
 
 {% block title %}My Kitchen · Pantry{% endblock %}
 
@@ -34,7 +34,7 @@
                                     {% endif %}
                                     <div class="flex-grow-1 min-w-0">
                                         <div class="text-truncate">{{ item.ingredient.name }}</div>
-                                        <div class="small text-secondary">{{ item.quantity|floatformat:"-2" }} {{ item.ingredient.get_unit_display }}</div>
+                                        <div class="small text-secondary">{{ item.quantity|amount }} {{ item.ingredient.get_unit_display }}</div>
                                     </div>
                                     {% if item.days_left == 0 %}
                                         <span class="badge text-bg-danger">Today</span>

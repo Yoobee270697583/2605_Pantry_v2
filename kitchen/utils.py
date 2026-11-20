@@ -60,7 +60,11 @@ def _low_on(recipe_ids, pantry_amounts):
     for recipe_id, amounts in needed.items():
         short = []
         for ingredient_id, need in amounts.items():
-            have = pantry_amounts.get(ingredient_id, 0)
+            # both are floats that have been added up, and that can be a tiny bit out - 0.1 + 0.2 is
+            # 0.30000000000000004. round them first, the same as Mark as cooked does (meals/utils.py),
+            # or you can be "low on" something when you have exactly enough: need 0.3, have 0.3
+            need = round(need, 2)
+            have = round(pantry_amounts.get(ingredient_id, 0), 2)
             if have < need:
                 short.append({"ingredient": ingredients[ingredient_id], "need": need, "have": have})
         short.sort(key=lambda item: item["ingredient"].name)

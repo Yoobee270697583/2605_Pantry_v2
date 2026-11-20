@@ -185,3 +185,11 @@ body {
 .pantry-auth-card {
     max-width: 420px;
 }
+
+/* ---------- Helpers Bootstrap doesn't have ---------- */
+/* Bootstrap has no min-width utility. A flex item won't shrink below the width of its
+   text, so without this a long name inside one (with text-truncate) pushes the rest of
+   the row off the screen on a phone, instead of being cut short with "..." */
+.min-w-0 {
+    min-width: 0;
+}

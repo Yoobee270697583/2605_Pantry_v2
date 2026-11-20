@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static amount_tags %}
 
 {% block title %}My Pantry — Pantry{% endblock %}
 
@@ -148,8 +148,8 @@
                                     <span>{{ item.ingredient.name }}</span>
                                 </div>
                             </td>
-                            {# floatformat:"-2" shows 2 instead of 2.0, and 1.5 as 1.5 #}
-                            <td>{{ item.quantity|floatformat:"-2" }} {{ item.ingredient.get_unit_display }}</td>
+                            {# amount shows 2 instead of 2.0, and 1.5 instead of 1.50 - it's in recipes/templatetags/amount_tags.py #}
+                            <td>{{ item.quantity|amount }} {{ item.ingredient.get_unit_display }}</td>
                             {# the category comes from the ingredient - users can't change it #}
                             <td class="d-none d-md-table-cell">{{ item.ingredient.get_category_display }}</td>
                             <td>

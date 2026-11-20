@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.dateformat import format as format_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -63,7 +64,9 @@ def new_code(request):
     if from_script:
         return JsonResponse({
             "code": format_code(household.invite_code),
-            "works_until": format_date(household.invite_expires_at, "j M"),
+            # the time is saved in UTC. localtime changes it to NZ time first, so this is the same
+            # date the page shows (the |date filter in the template does that by itself)
+            "works_until": format_date(timezone.localtime(household.invite_expires_at), "j M"),
         })
     messages.success(request, "New invite code made. The old one no longer works.")
     return go_back(request)
