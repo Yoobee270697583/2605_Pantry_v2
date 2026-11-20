@@ -187,6 +187,9 @@ SOCIALACCOUNT_PROVIDERS = {
     "google": {
         # only the Google account's name and email address
         "SCOPE": ["profile", "email"],
+        # always show Google's "Choose an account" page. without it Google signs you straight back
+        # in with the last account you used, so there's no way to switch to a different one
+        "AUTH_PARAMS": {"prompt": "select_account"},
         "APPS": [],
     },
 }
