@@ -11,15 +11,18 @@ from meals.utils import visible_plans
 from meals.views import go_back
 from recipes.models import Ingredient
 from .forms import AmountForm
-from .models import ShoppingItem
+from .models import Order, ShoppingItem
 from .utils import ShoppingError, add_list_to_pantry, get_shopping_list
 
 # the shopping list - what to buy for the household's planned meals, plus the things people add
-# themselves, and adding what's been bought to the pantry
+# themselves, and adding what's been bought to the pantry. the last two views are Previous Orders
 
 # the most ingredients one search shows. each one has its own little form, so 650 of them
 # (searching "a") would be a very long page
 MAX_SEARCH_RESULTS = 20
+
+# how many ingredient names each order shows on Previous Orders, before "and 11 more"
+ORDER_PREVIEW_NAMES = 3
 
 
 @login_required
@@ -126,7 +129,8 @@ def add_to_pantry(request):
     # the button's value says which row it's on, e.g. "planned_12" (see the template)
     row = request.POST.get("row", "")
     try:
-        added = add_list_to_pantry(household, request.user, request.POST, only_row=row)
+        # a single row never makes an order, so the second thing it gives back isn't needed here
+        added, order = add_list_to_pantry(household, request.user, request.POST, only_row=row)
     except ShoppingError as error:
         messages.error(request, str(error))
         return redirect("shopping:index")
@@ -146,13 +150,56 @@ def checkout(request):
     household = get_household(request.user)
 
     try:
-        added = add_list_to_pantry(household, request.user, request.POST)
+        added, order = add_list_to_pantry(household, request.user, request.POST)
     except ShoppingError as error:
         messages.error(request, str(error))
         return redirect("shopping:index")
 
-    if added:
-        messages.success(request, f"{len(added)} thing{'s' if len(added) != 1 else ''} added to your pantry.")
-    else:
+    if not added:
         messages.info(request, "Nothing was added to your pantry. Rows with an empty box are skipped.")
-    return redirect("shopping:index")
+        return redirect("shopping:index")
+
+    messages.success(request, f"{len(added)} thing{'s' if len(added) != 1 else ''} added to your pantry.")
+    # straight to the order it just made, so you can see what went in (V1 went to the list of orders)
+    return redirect("orders:detail", order.id)
+
+
+@login_required
+def orders_index(request):
+    """The Previous Orders page. Every shopping list the household has added to its pantry, newest first."""
+    household = get_household(request.user)
+
+    # newest first comes from Order's Meta ordering. prefetch_related gets the lines of every order,
+    # and their ingredients, in two more queries - not a query for each order like V1's order.items
+    orders = (
+        Order.objects.filter(household=household)
+        .select_related("ordered_by")
+        .prefetch_related("items__ingredient")
+    )
+
+    for order in orders:
+        # the lines come out A to Z (OrderItem's Meta ordering). a few of the names go on the page,
+        # with how many more there are, so you can tell which shop was which
+        names = [item.ingredient.name for item in order.items.all()]
+        order.item_count = len(names)
+        order.preview = ", ".join(names[:ORDER_PREVIEW_NAMES])
+        order.more_count = max(len(names) - ORDER_PREVIEW_NAMES, 0)
+
+    return render(request, "shopping/orders.html", {"orders": orders})
+
+
+@login_required
+def order_detail(request, order_id):
+    """One order: everything it added to the pantry, and how much."""
+    # filtering by household means another household's order is a 404 (V1 sent you back to the list)
+    order = get_object_or_404(
+        Order.objects.select_related("ordered_by"),
+        id=order_id,
+        household=get_household(request.user),
+    )
+
+    return render(request, "shopping/order_detail.html", {
+        "order": order,
+        # select_related gets each line's ingredient in the same query
+        "items": order.items.select_related("ingredient"),
+    })

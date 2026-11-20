@@ -10,12 +10,16 @@
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
     <h1 class="mb-0">Shopping List</h1>
-    {% if shopping_list or own_items %}
-        {# form="shopping-form" makes this the button of the list's form further down, even though it's up here. #}
-        {# it asks first, because it changes the whole pantry in one go #}
-        <button type="submit" form="shopping-form" class="btn btn-primary"
-                onclick="return confirm('Add everything on your shopping list to your pantry? Rows with an empty box are skipped.');">Add all to pantry</button>
-    {% endif %}
+    <div class="d-flex flex-wrap gap-2">
+        {# the phone nav only has "Shopping", so this is how phones get to Previous Orders #}
+        <a href="{% url 'orders:index' %}" class="btn btn-outline-primary">Previous orders</a>
+        {% if shopping_list or own_items %}
+            {# form="shopping-form" makes this the button of the list's form further down, even though it's up here. #}
+            {# it asks first, because it changes the whole pantry in one go #}
+            <button type="submit" form="shopping-form" class="btn btn-primary"
+                    onclick="return confirm('Add everything on your shopping list to your pantry? Rows with an empty box are skipped.');">Add all to pantry</button>
+        {% endif %}
+    </div>
 </div>
 <p class="text-body-secondary mt-1">Worked out from your <a href="{% url 'planned:index' %}">planned meals</a>, minus what's already in your pantry. Once you've bought something, check the amount in its box and add it to your pantry.</p>
 
@@ -91,7 +95,7 @@
 {% comment %}
     THE LIST
     One form goes round both tables, so Add all to pantry (up in the page header) can send every
-    amount box at once. That goes to shopping:checkout.
+    amount box at once. That goes to shopping:checkout, which saves it as an order (Previous Orders).
 
     The buttons on each row send the same form somewhere else with formaction:
     - Add to pantry goes to shopping:to_pantry. Its name="row" value says which row it's on.

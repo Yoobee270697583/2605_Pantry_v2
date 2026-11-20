@@ -127,7 +127,8 @@ def add_list_to_pantry(household, user, posted, only_row=None):
     and no order is made, like V1's Add to Pantry. Without it every row is added and it's
     saved as an Order, like V1's checkout.
 
-    Returns the names of the ingredients that were added, A to Z - an empty list if nothing was.
+    Returns two things: the names of the ingredients that were added, A to Z (an empty list if
+    nothing was), and the Order that was made (None for a single row, or if nothing was added).
     Raises ShoppingError if an amount isn't right, and then nothing is added at all.
     """
     # atomic = the pantry, the order and the own items all change together or not at all
@@ -186,7 +187,7 @@ def add_list_to_pantry(household, user, posted, only_row=None):
                 bought_own_items.append(own_item)
 
         if not amounts:
-            return []
+            return [], None
 
         for ingredient_id, quantity in amounts.items():
             quantity = round(quantity, 2)
@@ -213,6 +214,7 @@ def add_list_to_pantry(household, user, posted, only_row=None):
         for own_item in bought_own_items:
             own_item.delete()
 
+        order = None
         if only_row is None:
             order = Order.objects.create(household=household, ordered_by=user)
             for ingredient_id, quantity in amounts.items():
@@ -224,4 +226,5 @@ def add_list_to_pantry(household, user, posted, only_row=None):
                     unit=ingredients[ingredient_id].unit,
                 )
 
-        return sorted((ingredient.name for ingredient in ingredients.values()), key=str.lower)
+        names = sorted((ingredient.name for ingredient in ingredients.values()), key=str.lower)
+        return names, order

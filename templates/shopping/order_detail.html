@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Order from {{ order.ordered_at|date:"j M Y" }} — Pantry{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'orders:index' %}" class="link-secondary text-decoration-none">← Back to orders</a>
+    {# V1 called these "Order #12". the date says more, and the number was every user's orders counted together #}
+    <h1 class="mt-2 mb-0">Order from {{ order.ordered_at|date:"j M Y" }}</h1>
+    <p class="text-body-secondary mt-1 mb-0">
+        {{ items|length }} thing{{ items|length|pluralize }} added to your pantry at {{ order.ordered_at|date:"g:i a" }}
+        {% if order.ordered_by == user %}
+            by you
+        {% elif order.ordered_by %}
+            by {{ order.ordered_by.first_name|default:order.ordered_by.username }}
+        {% else %}
+            {# ordered_by is empty when that person has deleted their account #}
+            by someone in your household
+        {% endif %}
+    </p>
+</div>
+
+{# the same table as My Pantry and the Shopping List #}
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Ingredient</th>
+                    <th scope="col" class="d-none d-md-table-cell">Category</th>
+                    <th scope="col" class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                {% with ingredient=item.ingredient %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            {% if ingredient.image_url %}
+                                <img src="{{ ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 d-none d-sm-block" loading="lazy" onerror="this.style.visibility='hidden'">
+                            {% else %}
+                                <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50 d-none d-sm-block">
+                            {% endif %}
+                            <span>{{ ingredient.name }}</span>
+                        </div>
+                    </td>
+                    <td class="d-none d-md-table-cell">{{ ingredient.get_category_display }}</td>
+                    {# the unit is the one saved with the order, not the ingredient's - see OrderItem in shopping/models.py #}
+                    <td class="text-end text-nowrap fw-semibold">{{ item.quantity|floatformat:"-2" }} {{ item.get_unit_display }}</td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

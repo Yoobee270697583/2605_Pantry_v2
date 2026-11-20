@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Previous Orders — Pantry{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h1 class="mb-0">Previous Orders</h1>
+    {# the phone nav only has "Shopping", which goes to the Shopping List, so this is the way back #}
+    <a href="{% url 'shopping:index' %}" class="btn btn-outline-primary">Shopping list</a>
+</div>
+<p class="text-body-secondary mt-1">Every time your household added a whole shopping list to its pantry, newest first.</p>
+
+{% if orders %}
+    <p class="text-body-secondary">{{ orders|length }} order{{ orders|length|pluralize }}</p>
+
+    <div class="card">
+        {# each order is one link to its own page. V1 showed these as cards with "Order #12" on them #}
+        <div class="list-group list-group-flush">
+            {% for order in orders %}
+            <a href="{% url 'orders:detail' order.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex flex-wrap justify-content-between gap-2">
+                    {# the |date filter shows it in the site's time zone #}
+                    <span class="fw-semibold">{{ order.ordered_at|date:"j M Y" }}</span>
+                    <span class="small text-body-secondary">{{ order.item_count }} thing{{ order.item_count|pluralize }}</span>
+                </div>
+                {# preview and more_count are worked out in the view #}
+                <div class="small text-body-secondary">{{ order.preview }}{% if order.more_count %} and {{ order.more_count }} more{% endif %}</div>
+                <div class="small text-body-secondary">
+                    {{ order.ordered_at|date:"g:i a" }} ·
+                    {% if order.ordered_by == user %}
+                        Added by you
+                    {% elif order.ordered_by %}
+                        Added by {{ order.ordered_by.first_name|default:order.ordered_by.username }}
+                    {% else %}
+                        {# ordered_by is empty when that person has deleted their account #}
+                        Added by someone in your household
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    {# close to the message V1 showed #}
+    <p class="text-body-secondary">
+        No orders yet. Press "Add all to pantry" on your shopping list and it's saved here.
+    </p>
+{% endif %}
+{% endblock %}
