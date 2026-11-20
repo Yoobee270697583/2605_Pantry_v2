@@ -12,9 +12,10 @@ from meals.views import go_back
 from recipes.models import Ingredient
 from .forms import AmountForm
 from .models import ShoppingItem
-from .utils import get_shopping_list
+from .utils import ShoppingError, add_list_to_pantry, get_shopping_list
 
-# the shopping list - what to buy for the household's planned meals, plus the things people add themselves
+# the shopping list - what to buy for the household's planned meals, plus the things people add
+# themselves, and adding what's been bought to the pantry
 
 # the most ingredients one search shows. each one has its own little form, so 650 of them
 # (searching "a") would be a very long page
@@ -112,4 +113,46 @@ def remove_item(request, item_id):
     item.delete()
 
     messages.success(request, f"{name} removed from your shopping list.")
+    return redirect("shopping:index")
+
+
+@login_required
+@require_POST
+def add_to_pantry(request):
+    """Adds one row of the shopping list to the pantry - the row whose Add to pantry button was pressed.
+    Doesn't make an order, the same as V1's Add to Pantry button."""
+    household = get_household(request.user)
+
+    # the button's value says which row it's on, e.g. "planned_12" (see the template)
+    row = request.POST.get("row", "")
+    try:
+        added = add_list_to_pantry(household, request.user, request.POST, only_row=row)
+    except ShoppingError as error:
+        messages.error(request, str(error))
+        return redirect("shopping:index")
+
+    # nothing added means the row had already gone (someone else in the household just bought it,
+    # or a double click). the page they're sent back to shows the list as it is now, so no message
+    if added:
+        messages.success(request, f"{added[0]} added to your pantry.")
+    return redirect("shopping:index")
+
+
+@login_required
+@require_POST
+def checkout(request):
+    """Adds everything on the shopping list to the pantry in one go, and saves it as an order.
+    V1 called this checkout too - its button was Add List To Pantry."""
+    household = get_household(request.user)
+
+    try:
+        added = add_list_to_pantry(household, request.user, request.POST)
+    except ShoppingError as error:
+        messages.error(request, str(error))
+        return redirect("shopping:index")
+
+    if added:
+        messages.success(request, f"{len(added)} thing{'s' if len(added) != 1 else ''} added to your pantry.")
+    else:
+        messages.info(request, "Nothing was added to your pantry. Rows with an empty box are skipped.")
     return redirect("shopping:index")

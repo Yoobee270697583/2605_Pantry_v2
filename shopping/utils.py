@@ -1,16 +1,21 @@
 import math
 from collections import defaultdict
 
+from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from households.models import Household
 from meals.utils import visible_plans
 from pantry.models import PantryItem
 from recipes.models import RecipeIngredient
 from suggestions.utils import STAPLES
+from .forms import AmountForm
+from .models import Order, OrderItem, ShoppingItem
 
-# works out a household's shopping list from its planned meals and its pantry.
-# nothing here is saved - it's worked out again every time the page is opened, so the list is
+# works out a household's shopping list from its planned meals and its pantry, and adds
+# what's been bought to the pantry (further down).
+# the list itself is never saved - it's worked out again every time the page is opened, so it's
 # already right after a meal is planned, removed or cooked, or the pantry changes.
 # V1 saved the list and had to call sync_shopping_list() from every one of those places
 
@@ -101,3 +106,122 @@ def get_shopping_list(household):
 
     shopping_list.sort(key=lambda item: item["ingredient"].name.lower())
     return shopping_list
+
+
+# ============================================================================
+# ADDING THE LIST TO THE PANTRY
+# ============================================================================
+
+class ShoppingError(Exception):
+    """An amount someone typed that isn't allowed. The message is shown on the page."""
+
+
+def add_list_to_pantry(household, user, posted, only_row=None):
+    """Adds things on the shopping list to the pantry, using the amounts typed on the page.
+
+    posted is the page's form: one amount for each row, named planned_<ingredient id> for the
+    planned meals part and own_<ingredient id> for the household's own items. A row whose
+    box is empty is left on the list.
+
+    only_row is for a row's own Add to pantry button - just that row is added ("planned_12")
+    and no order is made, like V1's Add to Pantry. Without it every row is added and it's
+    saved as an Order, like V1's checkout.
+
+    Returns the names of the ingredients that were added, A to Z - an empty list if nothing was.
+    Raises ShoppingError if an amount isn't right, and then nothing is added at all.
+    """
+    # atomic = the pantry, the order and the own items all change together or not at all
+    with transaction.atomic():
+        # one of these at a time for each household. if two people press the button at the same
+        # moment (or one person double clicks), the second waits here, then finds the first has
+        # already taken those rows off the list - so nothing is added twice.
+        # no_key=True is a lighter lock: it doesn't hold up things that only point at the
+        # household, like someone planning a meal
+        Household.objects.select_for_update(no_key=True).get(pk=household.pk)
+
+        # every row that's on the list right now, worked out again here instead of trusting the
+        # page - it could be a few minutes old. (the row's name in the form, its ingredient, its own item)
+        rows = []
+        for item in get_shopping_list(household):
+            rows.append((f"planned_{item['ingredient'].id}", item["ingredient"], None))
+
+        # locked so nobody can add onto an own item while it's being bought and taken off the list.
+        # of=("self",) locks only the shopping rows, not the Ingredient rows every household shares
+        own_items = (
+            ShoppingItem.objects.select_for_update(of=("self",))
+            .filter(household=household)
+            .select_related("ingredient")
+        )
+        for own_item in own_items:
+            rows.append((f"own_{own_item.ingredient_id}", own_item.ingredient, own_item))
+
+        # how much of each ingredient to add. the same ingredient can be in both parts of the
+        # list (milk for a planned meal, and milk someone added), so they're added together
+        amounts = defaultdict(float)
+        ingredients = {}
+        bought_own_items = []
+        for name, ingredient, own_item in rows:
+            if only_row is not None and name != only_row:
+                continue
+
+            typed = posted.get(name, "").strip()
+            if not typed:
+                if only_row is not None:
+                    raise ShoppingError(f"Enter an amount for {ingredient.name}.")
+                # an empty box at checkout means "didn't buy this one" - it stays on the list
+                continue
+
+            form = AmountForm({"quantity": typed})
+            if not form.is_valid():
+                raise ShoppingError(f"{ingredient.name}: {form.errors['quantity'][0]}")
+
+            quantity = form.cleaned_data["quantity"]
+            if ingredient.unit == "each":
+                # things that are counted go up to a whole one, like everywhere else on the list
+                quantity = math.ceil(quantity)
+
+            amounts[ingredient.id] += quantity
+            ingredients[ingredient.id] = ingredient
+            if own_item:
+                bought_own_items.append(own_item)
+
+        if not amounts:
+            return []
+
+        for ingredient_id, quantity in amounts.items():
+            quantity = round(quantity, 2)
+
+            # shopping has no expiry date, so it goes onto the pantry item for this ingredient
+            # that has no date either, if there is one (the oldest if there are a few). items with
+            # a date are a different batch, so they're left alone - the same idea as joining a household.
+            # select_for_update because Mark as cooked could be taking some off the same item right now
+            item = (
+                PantryItem.objects.select_for_update()
+                .filter(household=household, ingredient_id=ingredient_id, expiry_date__isnull=True)
+                .order_by("id")
+                .first()
+            )
+            if item:
+                item.quantity = round(item.quantity + quantity, 2)
+                # updated_at has to be listed too, or auto_now doesn't save it
+                item.save(update_fields=["quantity", "updated_at"])
+            else:
+                PantryItem.objects.create(household=household, ingredient_id=ingredient_id, quantity=quantity, added_by=user)
+
+        # own items that were bought come off the list. the planned meals part needs nothing
+        # doing - it's worked out from the pantry, which now has more in it
+        for own_item in bought_own_items:
+            own_item.delete()
+
+        if only_row is None:
+            order = Order.objects.create(household=household, ordered_by=user)
+            for ingredient_id, quantity in amounts.items():
+                OrderItem.objects.create(
+                    order=order,
+                    ingredient_id=ingredient_id,
+                    quantity=round(quantity, 2),
+                    # saved with the order - see OrderItem in models.py
+                    unit=ingredients[ingredient_id].unit,
+                )
+
+        return sorted((ingredient.name for ingredient in ingredients.values()), key=str.lower)
