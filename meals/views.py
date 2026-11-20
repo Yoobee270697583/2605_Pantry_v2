@@ -49,7 +49,8 @@ def add_to_plan(request, recipe_id):
 
     PlannedMeal.objects.create(household=household, recipe=recipe, added_by=request.user)
 
-    # TODO: update the shopping list here once it's built (V1 called sync_shopping_list)
+    # nothing to do for the shopping list. it's worked out from the planned meals every time
+    # it's opened (shopping/utils.py), so V1's sync_shopping_list isn't needed
 
     messages.success(request, f"{recipe.name} added to Planned Meals.")
     return go_back(request, "planned:index")
@@ -65,7 +66,7 @@ def remove_from_plan(request, plan_id):
     name = plan.recipe.name
     plan.delete()
 
-    # TODO: update the shopping list here once it's built
+    # the shopping list doesn't need updating here either - see add_to_plan
 
     messages.success(request, f"{name} removed from Planned Meals.")
     return redirect("planned:index")
@@ -96,7 +97,7 @@ def mark_as_cooked(request, plan_id):
         CookedMeal.objects.create(household=household, recipe=recipe, cooked_by=request.user)
         plan.delete()
 
-    # TODO: update the shopping list here once it's built
+    # the shopping list doesn't need updating here either - see add_to_plan
 
     messages.success(request, f"{recipe.name} cooked! Its ingredients have been taken off your pantry.")
     if short:

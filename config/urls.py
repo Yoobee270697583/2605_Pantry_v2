@@ -45,8 +45,8 @@ urlpatterns = [
     path('suggestions/', include('suggestions.urls')),
         path('planned/', include('meals.planned_urls')),
     path('cooked/', include('meals.cooked_urls')),
+    path('shopping/', include('shopping.urls')),
 
     # not built yet - see under_construction above
-    path('shopping/', under_construction("Shopping Lists", "shopping")),
     path('orders/', under_construction("Previous Orders", "orders")),
 ]

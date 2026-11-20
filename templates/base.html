@@ -15,10 +15,10 @@
 
 {% comment %}
     NAV LINKS
-    Shopping Lists and Previous Orders don't have apps yet, so they go to
-    "Under construction" pages (under_construction in config/urls.py).
-    When one is built, swap its line there for the app's urls - the names
-    below (shopping:index etc.) stay the same.
+    Previous Orders doesn't have a page yet, so it goes to an
+    "Under construction" page (under_construction in config/urls.py).
+    When it's built, swap its line there for the app's urls - the name
+    below (orders:index) stays the same.
 
     The "active" highlight works automatically: it compares the link's
     app name with request.resolver_match.app_name, so views don't need to
