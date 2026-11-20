@@ -120,3 +120,16 @@ def cooked_index(request):
         cooked.ago = timesince(cooked.cooked_at, depth=1)
 
     return render(request, "meals/cooked.html", {"cooked_meals": cooked_meals})
+
+
+@login_required
+@require_POST
+def delete_cooked(request, cooked_id):
+    """Takes a meal out of the household's Cooked Meals history. The pantry doesn't change, the same as V1's Delete."""
+    # visible_cooked only has this household's meals, so another household's is a 404 (V1 didn't check this)
+    cooked = get_object_or_404(visible_cooked(get_household(request.user)), id=cooked_id)
+    name = cooked.recipe.name
+    cooked.delete()
+
+    messages.success(request, f"{name} removed from Cooked Meals.")
+    return redirect("cooked:index")

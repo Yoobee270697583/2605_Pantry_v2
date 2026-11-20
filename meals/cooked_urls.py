@@ -8,4 +8,5 @@ app_name = "cooked"
 
 urlpatterns = [
     path("", views.cooked_index, name="index"),
+    path("<int:cooked_id>/delete/", views.delete_cooked, name="delete"),
 ]

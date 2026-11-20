@@ -35,7 +35,7 @@
                                 {# stretched-link makes the whole card clickable #}
                                 <a href="{% url 'recipes:detail' recipe.pk %}" class="stretched-link text-reset text-decoration-none">{{ recipe.name }}</a>
                             </h2>
-                            <small class="text-body-secondary">
+                            <small class="text-body-secondary mb-3">
                                 {% if cooked.cooked_by == user %}
                                     Cooked by you
                                 {% elif cooked.cooked_by %}
@@ -47,6 +47,20 @@
                                 {# ago is worked out in the view, e.g. "3 days" #}
                                 · {{ cooked.ago }} ago
                             </small>
+                            {# position-relative z-2 puts the buttons above the stretched link so they can be clicked #}
+                            <div class="d-flex flex-wrap gap-2 mt-auto">
+                                {# the same view as every other "Plan this meal" button. next brings you back here instead of going to Planned Meals #}
+                                <form method="post" action="{% url 'planned:add' recipe.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn btn-sm btn-primary position-relative z-2">Plan again</button>
+                                </form>
+                                {# only takes it out of this history - nothing goes back into the pantry #}
+                                <form method="post" action="{% url 'cooked:delete' cooked.pk %}" onsubmit="return confirm('Delete this from your Cooked Meals? Your pantry stays the same.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger position-relative z-2">Delete</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
