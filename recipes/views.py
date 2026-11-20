@@ -7,8 +7,9 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from households.utils import get_household
 from meals.models import PlannedMeal
-from .forms import IngredientLineFormSet, RecipeForm
+from .forms import LINE_UNIT_CHOICES, IngredientLineFormSet, RecipeForm
 from .models import Ingredient, IngredientAlias, Recipe, RecipeIngredient, SavedRecipe
+from .unit_helper import parse_measure
 from .utils import visible_recipes
 
 # how many recipe cards to show on each page
@@ -233,10 +234,19 @@ def edit_recipe(request, pk):
     current_lines = []
     for line in recipe.ingredients.select_related("ingredient").order_by("id"):
         quantity = line.quantity
+        unit = line.ingredient.unit if quantity is not None else ""
+
+        # a line typed in another unit (e.g. "0.5 tsp") comes back as it was typed,
+        # instead of as the converted amount (2.5 ml)
+        if line.measure_text:
+            typed_quantity, typed_unit = parse_measure(line.measure_text)
+            if typed_quantity is not None and typed_unit in dict(LINE_UNIT_CHOICES):
+                quantity, unit = typed_quantity, typed_unit
+
         # 3.0 -> 3, so the amount box doesn't show "3.0"
         if quantity is not None and quantity == int(quantity):
             quantity = int(quantity)
-        current_lines.append({"ingredient": line.ingredient.name, "quantity": quantity})
+        current_lines.append({"ingredient": line.ingredient.name, "quantity": quantity, "unit": unit})
 
     form = RecipeForm(request.POST or None, instance=recipe)
     lines = IngredientLineFormSet(request.POST or None, prefix="lines", initial=current_lines)
@@ -286,25 +296,28 @@ def save_lines(recipe, lines):
         RecipeIngredient.objects.create(
             recipe=recipe,
             ingredient=line["ingredient"],
-            quantity=line["quantity"],
+            # converted into the ingredient's own unit by IngredientLineForm.clean
+            quantity=line["stored_quantity"],
             # no amount (e.g. salt to taste) means it shows on the recipe but isn't taken from the pantry
-            is_tracked=line["quantity"] is not None,
+            is_tracked=line["stored_quantity"] is not None,
+            # e.g. "0.5 tsp" - shown on the recipe, with the converted amount underneath
+            measure_text=line["measure_text"],
         )
 
 
 def ingredient_choices():
     """What the ingredient boxes on the Create Recipe page need - every ingredient name to
-    suggest while typing, and each name's unit to show next to the amount box."""
+    suggest while typing, and each name's own unit to pick in the unit dropdown."""
     names = []
-    # lowercase name -> unit, e.g. "onion" -> "Each"
+    # lowercase name -> unit, e.g. "onion" -> "each"
     units = {}
 
     for ingredient in Ingredient.objects.all():
         names.append(ingredient.name)
-        units[ingredient.name.lower()] = ingredient.get_unit_display()
+        units[ingredient.name.lower()] = ingredient.unit
 
     # other names like "Onions" work too, they just aren't suggested
     for alias in IngredientAlias.objects.select_related("ingredient"):
-        units[alias.name.lower()] = alias.ingredient.get_unit_display()
+        units[alias.name.lower()] = alias.ingredient.unit
 
     return names, units

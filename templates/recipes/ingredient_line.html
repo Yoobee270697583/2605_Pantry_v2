@@ -12,15 +12,24 @@
         {% endfor %}
     </div>
 
-    <div class="col col-sm-4">
-        {# the unit comes from the ingredient, so it's shown next to the box instead of being picked #}
-        <div class="input-group {% if line.quantity.errors %}has-validation{% endif %}">
+    <div class="col col-sm-5">
+        {# the unit starts on the ingredient's own one, but can be changed e.g. to tsp. it gets converted when saved #}
+        <div class="input-group {% if line.quantity.errors or line.unit.errors %}has-validation{% endif %}">
             <input type="number" name="{{ line.quantity.html_name }}" id="{{ line.quantity.id_for_label }}"
                    value="{{ line.quantity.value|default_if_none:'' }}" step="any" min="0"
                    class="form-control {% if line.quantity.errors %}is-invalid{% endif %}"
                    placeholder="Amount" aria-label="Amount">
-            <span class="input-group-text ingredient-unit">–</span>
+            <select name="{{ line.unit.html_name }}" id="{{ line.unit.id_for_label }}"
+                    class="form-select flex-grow-0 w-auto ingredient-unit {% if line.unit.errors %}is-invalid{% endif %}"
+                    aria-label="Unit">
+                {% for value, label in line.fields.unit.choices %}
+                    <option value="{{ value }}" {% if line.unit.value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
             {% for error in line.quantity.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+            {% for error in line.unit.errors %}
                 <div class="invalid-feedback">{{ error }}</div>
             {% endfor %}
         </div>

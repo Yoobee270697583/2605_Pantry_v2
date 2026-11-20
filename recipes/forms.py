@@ -1,7 +1,30 @@
 from django import forms
 
 from .models import Recipe
+from .unit_helper import convert_to_ingredient_unit
 from .utils import find_ingredient
+
+# the units someone can type a custom recipe amount in. whatever they pick is
+# converted into the ingredient's own unit (g, ml or each) when it's saved -
+# the same way the TheMealDB import turns "1/2 tsp" into ml - so the pantry
+# still lines up, but the recipe can say "0.5 tsp" instead of "2.5 ml"
+LINE_UNIT_CHOICES = [
+    ("g", "g"),
+    ("kg", "kg"),
+    ("ml", "mL"),
+    ("l", "L"),
+    ("tsp", "tsp"),
+    ("tbsp", "tbsp"),
+    ("cup", "cup"),
+    ("each", "each"),
+]
+
+# the units that always convert into each kind of ingredient, for the error message
+SAME_KIND_UNITS = {
+    "g": "g or kg",
+    "ml": "mL, L, tsp, tbsp or cup",
+    "each": "each",
+}
 
 
 class RecipeForm(forms.ModelForm):
@@ -54,9 +77,12 @@ class IngredientLineForm(forms.Form):
     # the name into the real Ingredient, so the line matches up with the pantry
     ingredient = forms.CharField(max_length=150, required=False)
 
-    # in the ingredient's own unit (g, ml or each), the same as pantry items.
-    # left empty for lines like "salt to taste"
+    # in whatever unit is picked below. left empty for lines like "salt to taste"
     quantity = forms.FloatField(required=False)
+
+    # starts on the ingredient's own unit (the page's script picks it), but can be
+    # changed to e.g. tsp or cup. left empty, the ingredient's own unit is used
+    unit = forms.ChoiceField(choices=[("", "Unit")] + LINE_UNIT_CHOICES, required=False)
 
     def clean_ingredient(self):
         name = self.cleaned_data["ingredient"]
@@ -77,9 +103,42 @@ class IngredientLineForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
 
+        ingredient = cleaned_data.get("ingredient")
+        quantity = cleaned_data.get("quantity")
+
+        # what gets saved: the amount in the ingredient's own unit, and the amount as
+        # typed (e.g. "0.5 tsp") to show on the recipe. both empty for "salt to taste"
+        cleaned_data["stored_quantity"] = None
+        cleaned_data["measure_text"] = ""
+
         # an amount with nothing next to it is probably a mistake
-        if cleaned_data.get("quantity") and "ingredient" in cleaned_data and cleaned_data["ingredient"] is None:
+        if quantity and "ingredient" in cleaned_data and ingredient is None:
             self.add_error("ingredient", "Pick an ingredient for this amount.")
+
+        if ingredient and quantity:
+            unit = cleaned_data.get("unit") or ingredient.unit
+            unit_label = dict(LINE_UNIT_CHOICES)[unit]
+
+            # e.g. 0.5 tsp of salt -> 2.5 ml. None if it can't be done, like cups of
+            # something we have no USDA weight for
+            converted = convert_to_ingredient_unit(quantity, unit, ingredient)
+
+            if converted is None or converted <= 0:
+                self.add_error(
+                    "unit",
+                    f"{ingredient.name} is measured in {ingredient.get_unit_display()}, and we can't convert "
+                    f"{unit_label} into that. Use {SAME_KIND_UNITS[ingredient.unit]} instead.",
+                )
+            else:
+                cleaned_data["stored_quantity"] = converted
+                # only worth showing when it's not already in the ingredient's unit.
+                # :g turns 0.5 into "0.5" and 2.0 into "2"
+                if unit != ingredient.unit:
+                    # "2 cups", but "1 cup" and "2 tsp"
+                    if unit == "cup" and quantity != 1:
+                        unit_label = "cups"
+                    cleaned_data["measure_text"] = f"{quantity:g} {unit_label}"
+
         return cleaned_data
 
 
