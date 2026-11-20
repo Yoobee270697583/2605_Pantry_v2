@@ -102,13 +102,13 @@
                         {# lines the pantry doesn't track (a pinch, to taste) just show their measure, with no label #}
                         {% if line.measure_text %}
                             {{ line.measure_text }}
-                            {# the amount the pantry will use, in g or ml. each doesn't need it, the measure already says how many #}
-                            {% if line.is_tracked and line.ingredient.unit != "each" %}
-                                <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
+                            {% if line.is_tracked %}
+                                {# what the pantry will use - the amount in g or ml, or just "each" because the measure already says how many #}
+                                <small class="d-block text-body-secondary">{% if line.ingredient.unit != "each" %}{{ line.quantity|floatformat:"-2" }} {% endif %}{{ line.ingredient.get_unit_display|lower }}</small>
                             {% endif %}
                         {% elif line.is_tracked %}
-                            {# custom recipes have no measure_text, their amount is already in the ingredient's unit. each is just the number #}
-                            {{ line.quantity|floatformat:"-2" }}{% if line.ingredient.unit != "each" %} {{ line.ingredient.get_unit_display|lower }}{% endif %}
+                            {# custom recipes have no measure_text, their amount is already in the ingredient's unit #}
+                            {{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}
                         {% endif %}
                     </span>
                 </li>
