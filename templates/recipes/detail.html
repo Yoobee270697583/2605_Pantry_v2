@@ -99,19 +99,16 @@
                     <img src="{{ line.ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0" loading="lazy">
                     <span class="flex-grow-1">{{ line.ingredient.name }}</span>
                     <span class="text-end">
+                        {# lines the pantry doesn't track (a pinch, to taste) just show their measure, with no label #}
                         {% if line.measure_text %}
                             {{ line.measure_text }}
                             {% if line.is_tracked %}
-                                {# the amount the pantry will use, after converting to the ingredient's unit #}
-                                <small class="d-block text-body-secondary">{{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}</small>
-                            {% else %}
-                                <small class="d-block text-body-secondary">not tracked</small>
+                                {# what the pantry will use - the amount in g or ml, or just "each" because the measure already says how many #}
+                                <small class="d-block text-body-secondary">{% if line.ingredient.unit != "each" %}{{ line.quantity|floatformat:"-2" }} {% endif %}{{ line.ingredient.get_unit_display|lower }}</small>
                             {% endif %}
                         {% elif line.is_tracked %}
                             {# custom recipes have no measure_text, their amount is already in the ingredient's unit #}
                             {{ line.quantity|floatformat:"-2" }} {{ line.ingredient.get_unit_display|lower }}
-                        {% else %}
-                            <small class="text-body-secondary">not tracked</small>
                         {% endif %}
                     </span>
                 </li>

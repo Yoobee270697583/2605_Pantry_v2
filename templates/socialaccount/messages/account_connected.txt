@@ -1,0 +1,2 @@
+{# overrides allauth's "The third-party account has been connected." after Connect Google on the Settings page #}
+Your Google account is connected. You can now log in with Continue with Google.

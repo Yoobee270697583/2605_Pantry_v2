@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load socialaccount %}
 
 {% block title %}Settings · Pantry{% endblock %}
 
@@ -43,7 +44,38 @@
                 {# text-break so a long email address wraps on a phone instead of running off the card #}
                 <p class="mb-3 text-break">{{ user.email }}</p>
                 {# allauth's own page, it uses the same layout as the rest of the site (templates/allauth/layouts/manage.html) #}
-                <a href="{% url 'account_change_password' %}" class="btn btn-outline-primary btn-sm">Change password</a>
+                {# someone who signed up with Google has no password yet, and allauth sends them to its set password page #}
+                <a href="{% url 'account_change_password' %}" class="btn btn-outline-primary btn-sm">{% if user.has_usable_password %}Change password{% else %}Set a password{% endif %}</a>
+
+                {# no Google keys means no providers, so this part doesn't show at all - the same as the Continue with Google button #}
+                {% get_providers as socialaccount_providers %}
+                {% for provider in socialaccount_providers %}
+                    {% if provider.id == "google" %}
+                        <hr>
+                        <p class="small text-secondary mb-0">Google</p>
+                        {% if google_account %}
+                            <p class="mb-2 text-break">Connected as {{ google_account.extra_data.email|default:"your Google account" }}</p>
+                            {% if user.has_usable_password %}
+                                <form method="post" action="{% url 'accounts:disconnect_google' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Disconnect</button>
+                                </form>
+                            {% else %}
+                                {# Google is their only way in, so it can't be taken off until they have a password #}
+                                <p class="small text-secondary mb-0">You log in with Google. Set a password first if you want to disconnect it.</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="mb-2">Not connected</p>
+                            <p class="small text-secondary mb-2">Connect it to log in with Continue with Google as well as your password.</p>
+                            {# posts straight to Google like the button on the login page. process='connect' adds Google #}
+                            {# to this account instead of logging in, and next brings you back to this page afterwards #}
+                            <form method="post" action="{% provider_login_url provider process='connect' next=request.path %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-primary btn-sm">Connect Google</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
             </div>
         </div>
     </div>

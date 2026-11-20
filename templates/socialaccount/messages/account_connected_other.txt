@@ -1,0 +1,2 @@
+{# overrides allauth's message for when that Google account already belongs to another Pantry account #}
+That Google account is already connected to a different Pantry account.

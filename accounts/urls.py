@@ -8,4 +8,5 @@ app_name = "accounts"
 
 urlpatterns = [
     path("", views.settings_page, name="settings"),
+    path("google/disconnect/", views.disconnect_google, name="disconnect_google"),
 ]
