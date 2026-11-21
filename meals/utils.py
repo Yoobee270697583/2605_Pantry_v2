@@ -7,41 +7,36 @@ from .models import CookedMeal, PlannedMeal
 
 
 def visible_plans(household):
-    """Returns the household's planned meals, leaving out any whose recipe it can't see any more.
-
-    That happens if another household makes its recipe private after this household planned it.
-    The plan is hidden, not deleted, so it comes back if the recipe is made public again - the
-    same as saved recipes. Planned Meals uses this, and My Kitchen and the shopping list should
-    too, so a private recipe can't show up anywhere for another household.
-    """
+    """ Returns the household's planned meals, leaving out any private recipes.
+        That happens if another household makes its recipe private, even after this household planned it.
+        The plan is hidden but not deleted, so it comes back if the recipe is made public again - the
+        same as saved recipes. Planned Meals uses this, and My Kitchen and the shopping list should
+        too, so a private recipe can't show up anywhere for another household. """
     # visible_recipes leaves out other households' private recipes (see recipes/utils.py)
+    # Return all visible Planned Meals
     return PlannedMeal.objects.filter(household=household, recipe__in=visible_recipes(household))
 
 
 def visible_cooked(household):
-    """Returns the household's cooked meals, leaving out any whose recipe it can't see any more.
-
-    The same rule as visible_plans - if another household makes its recipe private after this
-    household cooked it, the meal is hidden from the history, and comes back if it's made public again.
-    """
+    """Returns the household's cooked meals, leaving out any privated recipes.
+        The same rule as visible_plans seen directly above - if another household makes its recipe private after this
+        household cooked it, the meal is hidden from the cooked meals history, and comes back if it's made public again."""
+    # Return all visible Cooked Meals
     return CookedMeal.objects.filter(household=household, recipe__in=visible_recipes(household))
 
 
-# taking a recipe's ingredients off the pantry when it's cooked.
-# replaces V1's subtract_recipe_ingredients_from_pantry - recipe lines and
-# pantry items are both stored in the ingredient's own unit (g, ml or each),
+# Dedicting a recipe's ingredients from the pantry when it's cooked.
+# Recipe lines and pantry items are both stored in the ingredient's own unit (g, ml or each),
 # so there's no parsing or unit matching, and nothing gets skipped on a unit mismatch
+# This is the key defect fix outlined about Pantry v1 in our proposal
 
 
 def deduct_recipe_from_pantry(household, recipe):
     """Takes the recipe's tracked ingredients off the household's pantry. Uses the soonest-expiring stock first.
-
-    Must be called inside transaction.atomic() - select_for_update locks the
-    pantry rows so two people cooking at the same moment can't both take the same stock.
-
-    Returns the names of ingredients the pantry didn't have enough of, so the
-    page can tell the user. Staples like Salt never count as short.
-    """
+        Must be called inside transaction.atomic() - select_for_update locks the
+        pantry rows so two people cooking at the same moment can't both take the same stock.
+        Returns the names of ingredients the pantry didn't have enough of, so the
+        page can tell the user. Staples like Salt never count as short. """
     today = timezone.localdate()
     short = []
 
