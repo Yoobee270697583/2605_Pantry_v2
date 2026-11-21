@@ -15,15 +15,12 @@
 
 {% comment %}
     NAV LINKS
-    Shopping Lists and Previous Orders don't have apps yet, so they go to
-    "Under construction" pages (under_construction in config/urls.py).
-    When one is built, swap its line there for the app's urls - the names
-    below (shopping:index etc.) stay the same.
-
     The "active" highlight works automatically: it compares the link's
     app name with request.resolver_match.app_name, so views don't need to
     pass active_page like they did in V1. For that to work, each app's
     urls.py needs  app_name = "<app>"  (e.g. app_name = "recipes").
+    The meals and shopping apps have two url files each, so that Cooked Meals
+    and Previous Orders get an app_name (and a highlight) of their own.
 {% endcomment %}
 {% with app=request.resolver_match.app_name %}
 

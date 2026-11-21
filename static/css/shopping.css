@@ -1,0 +1,9 @@
+/* ==========================================================================
+   Shopping List page only (templates/shopping/index.html). See CSS_GUIDE.md.
+   ========================================================================== */
+
+/* the amount box on each row of the list. an input group stretches to fill whatever it's
+   in, so it needs a set width to sit neatly beside the buttons (or on top of them on a phone) */
+.shopping-amount {
+    width: 8rem;
+}

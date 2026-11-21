@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% load static amount_tags %}
+
+{% block title %}Shopping List — Pantry{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/shopping.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h1 class="mb-0">Shopping List</h1>
+    <div class="d-flex flex-wrap gap-2">
+        {# the phone nav only has "Shopping", so this is how phones get to Previous Orders #}
+        <a href="{% url 'orders:index' %}" class="btn btn-outline-primary">Previous orders</a>
+        {% if shopping_list or own_items %}
+            {# form="shopping-form" makes this the button of the list's form further down, even though it's up here. #}
+            {# it asks first, because it changes the whole pantry in one go #}
+            <button type="submit" form="shopping-form" class="btn btn-primary"
+                    onclick="return confirm('Add everything on your shopping list to your pantry? Rows with an empty box are skipped.');">Add all to pantry</button>
+        {% endif %}
+    </div>
+</div>
+<p class="text-body-secondary mt-1">Worked out from your <a href="{% url 'planned:index' %}">planned meals</a>, minus what's already in your pantry. Once you've bought something, check the amount in its box and add it to your pantry.</p>
+
+<!-- ===================== ADD YOUR OWN ITEM ===================== -->
+<h2 class="h5">Add your own item</h2>
+{# a search, like the Ingredients tab on My Pantry, because every item has to be a real Ingredient #}
+<form method="get" action="{% url 'shopping:index' %}" class="row g-2 mb-3" role="search">
+    <div class="col-md">
+        <div class="input-group">
+            <input type="search" name="q" class="form-control" placeholder="Search ingredients..." value="{{ search_query }}" aria-label="Search for an ingredient to add to your shopping list">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </div>
+    {% if search_query %}
+        <div class="col-md-auto">
+            <a href="{% url 'shopping:index' %}" class="btn btn-outline-secondary w-100">Clear</a>
+        </div>
+    {% endif %}
+</form>
+
+{% if search_query %}
+    {% if found_ingredients %}
+        <div class="card mb-2">
+            <ul class="list-group list-group-flush">
+                {% for ingredient in found_ingredients %}
+                <li class="list-group-item">
+                    {# on a phone the amount box goes underneath the name, from 576px up it sits beside it #}
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if ingredient.image_url %}
+                                    <img src="{{ ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0" loading="lazy" onerror="this.style.visibility='hidden'">
+                                {% else %}
+                                    <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50">
+                                {% endif %}
+                                <div>
+                                    <div>{{ ingredient.name }}</div>
+                                    <div class="small text-body-secondary">
+                                        {{ ingredient.get_category_display }}{% if ingredient.on_list %} · {{ ingredient.on_list|amount }} {{ ingredient.get_unit_display }} on your list already{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-5 col-md-6 col-lg-4 col-xl-3">
+                            <form method="post" action="{% url 'shopping:add' ingredient.id %}" class="d-flex gap-2">
+                                {% csrf_token %}
+                                {# comes back to this search afterwards (go_back in meals/views.py) #}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                {# the unit comes from the ingredient, so it's shown next to the box instead of being picked #}
+                                <div class="input-group input-group-sm">
+                                    {# things that are counted start at 1 and go up in whole ones #}
+                                    <input type="number" name="quantity" class="form-control"
+                                           {% if ingredient.unit == "each" %}step="1" min="1" value="1"{% else %}step="any" min="0.01" placeholder="Amount"{% endif %}
+                                           required aria-label="How much {{ ingredient.name }} to add">
+                                    <span class="input-group-text">{{ ingredient.get_unit_display }}</span>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                            </form>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% if hidden_count %}
+            <p class="small text-secondary">And {{ hidden_count }} more. Type more of the name to find the one you want.</p>
+        {% endif %}
+    {% else %}
+        <p class="text-secondary">No ingredients found for "{{ search_query }}".</p>
+    {% endif %}
+{% endif %}
+
+{% comment %}
+    THE LIST
+    One form goes round both tables, so Add all to pantry (up in the page header) can send every
+    amount box at once. That goes to shopping:checkout, which saves it as an order (Previous Orders).
+
+    The buttons on each row send the same form somewhere else with formaction:
+    - Add to pantry goes to shopping:to_pantry. Its name="row" value says which row it's on.
+    - Remove goes to shopping:remove.
+    They have formnovalidate so a mistake in one row's box can't stop another row's button working -
+    the view checks the amount anyway.
+
+    Each box is named planned_<ingredient id> or own_<ingredient id>, which is what
+    add_list_to_pantry (shopping/utils.py) looks for.
+{% endcomment %}
+<form method="post" action="{% url 'shopping:checkout' %}" id="shopping-form">
+    {% csrf_token %}
+
+    <!-- ===================== FOR YOUR PLANNED MEALS ===================== -->
+    <h2 class="h5 mt-4">For your planned meals</h2>
+    {% if shopping_list %}
+        <p class="text-body-secondary">{{ shopping_list|length }} thing{{ shopping_list|length|pluralize }} to buy for {{ planned_count }} planned meal{{ planned_count|pluralize }}</p>
+
+        {# the same table as My Pantry #}
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Ingredient</th>
+                            <th scope="col" class="d-none d-lg-table-cell">Category</th>
+                            {# hidden on phones - the box in the next column starts with the same amount in it #}
+                            <th scope="col" class="text-end d-none d-sm-table-cell">To buy</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in shopping_list %}
+                        {% with ingredient=item.ingredient %}
+                        <tr>
+                            <td>
+                                {# same small picture as My Pantry - hidden on phones to leave room for the name #}
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if ingredient.image_url %}
+                                        <img src="{{ ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 d-none d-sm-block" loading="lazy" onerror="this.style.visibility='hidden'">
+                                    {% else %}
+                                        <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50 d-none d-sm-block">
+                                    {% endif %}
+                                    <div>
+                                        <div>{{ ingredient.name }}</div>
+                                        <div class="small text-body-secondary">
+                                            {% if item.need is None %}
+                                                {# lines like "to taste" - there's no amount to take the pantry off #}
+                                                No amount in the recipe
+                                            {% else %}
+                                                {# each ingredients don't say their unit here, like the Low on line on My Kitchen. #}
+                                                {# amount shows 7.5 instead of 7.50 - it's in recipes/templatetags/amount_tags.py #}
+                                                Need {{ item.need|amount }}{% if ingredient.unit != "each" %} {{ ingredient.get_unit_display }}{% endif %}, have {% if item.have %}{{ item.have|amount }}{% else %}none{% endif %}
+                                            {% endif %}
+                                        </div>
+                                        {# which planned meals it's for, so it's clear why it's on the list #}
+                                        <div class="small text-body-secondary">For {{ item.meals|join:", " }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            {# the category comes from the ingredient, like My Pantry #}
+                            <td class="d-none d-lg-table-cell">{{ ingredient.get_category_display }}</td>
+                            <td class="text-end text-nowrap fw-semibold d-none d-sm-table-cell">
+                                {% if item.to_buy is None %}Some{% else %}{{ item.to_buy|amount }} {{ ingredient.get_unit_display }}{% endif %}
+                            </td>
+                            <td class="text-end">
+                                {# the box sits on top of the button until the screen is wide enough for them side by side #}
+                                <div class="d-flex flex-column flex-xl-row justify-content-end gap-1">
+                                    {# starts as the amount to buy. it's empty when the recipe gives no amount, so you type what you bought #}
+                                    <div class="input-group input-group-sm shopping-amount flex-shrink-0">
+                                        <input type="number" name="planned_{{ ingredient.id }}" class="form-control" data-amount
+                                               value="{% if item.to_buy is not None %}{{ item.to_buy|amount }}{% endif %}"
+                                               {% if ingredient.unit == "each" %}step="1" min="1"{% else %}step="any" min="0.01"{% endif %}
+                                               placeholder="Amount" aria-label="How much {{ ingredient.name }} to add to your pantry">
+                                        <span class="input-group-text">{{ ingredient.get_unit_display }}</span>
+                                    </div>
+                                    <button type="submit" name="row" value="planned_{{ ingredient.id }}" formaction="{% url 'shopping:to_pantry' %}" formnovalidate
+                                            class="btn btn-outline-primary btn-sm text-nowrap">Add to pantry</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% elif planned_count %}
+        <p>Nothing to buy. Your pantry already has everything your planned meals need.</p>
+    {% else %}
+        {# close to the message V1 showed #}
+        <p class="text-body-secondary">
+            Nothing here yet. Plan some meals to fill it.
+            <a href="{% url 'recipes:index' %}" class="ms-2">Browse recipes</a>
+        </p>
+    {% endif %}
+
+    <!-- ===================== YOUR OWN ITEMS ===================== -->
+    {# only shown once something has been added - the search at the top is how you add the first one #}
+    {% if own_items %}
+        <h2 class="h5 mt-4">Your own items</h2>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Ingredient</th>
+                            <th scope="col" class="d-none d-lg-table-cell">Category</th>
+                            <th scope="col" class="text-end d-none d-sm-table-cell">To buy</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in own_items %}
+                        {% with ingredient=item.ingredient %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if ingredient.image_url %}
+                                        <img src="{{ ingredient.image_url }}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 d-none d-sm-block" loading="lazy" onerror="this.style.visibility='hidden'">
+                                    {% else %}
+                                        <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50 d-none d-sm-block">
+                                    {% endif %}
+                                    <div>
+                                        <div>{{ ingredient.name }}</div>
+                                        {# who added it, like "Planned by" on Planned Meals #}
+                                        <div class="small text-body-secondary">
+                                            {% if item.added_by == user %}
+                                                Added by you
+                                            {% elif item.added_by %}
+                                                Added by {{ item.added_by.first_name|default:item.added_by.username }}
+                                            {% else %}
+                                                {# added_by is empty when that person has deleted their account #}
+                                                Added by someone in your household
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="d-none d-lg-table-cell">{{ ingredient.get_category_display }}</td>
+                            <td class="text-end text-nowrap fw-semibold d-none d-sm-table-cell">{{ item.quantity|amount }} {{ ingredient.get_unit_display }}</td>
+                            <td class="text-end">
+                                <div class="d-flex flex-column flex-xl-row justify-content-end gap-1">
+                                    <div class="input-group input-group-sm shopping-amount flex-shrink-0">
+                                        <input type="number" name="own_{{ ingredient.id }}" class="form-control" data-amount
+                                               value="{{ item.quantity|amount }}"
+                                               {% if ingredient.unit == "each" %}step="1" min="1"{% else %}step="any" min="0.01"{% endif %}
+                                               placeholder="Amount" aria-label="How much {{ ingredient.name }} to add to your pantry">
+                                        <span class="input-group-text">{{ ingredient.get_unit_display }}</span>
+                                    </div>
+                                    <button type="submit" name="row" value="own_{{ ingredient.id }}" formaction="{% url 'shopping:to_pantry' %}" formnovalidate
+                                            class="btn btn-outline-primary btn-sm text-nowrap">Add to pantry</button>
+                                    {# takes it off the list without adding it to the pantry. a POST, so it can't be triggered by just visiting a link #}
+                                    <button type="submit" formaction="{% url 'shopping:remove' item.id %}" formnovalidate
+                                            class="btn btn-outline-danger btn-sm">Remove</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // pressing Enter in an amount box presses that row's own Add to pantry button.
+    // without this the browser would press the form's first button, which is Add all to pantry
+    document.querySelectorAll("[data-amount]").forEach((box) => {
+        box.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                box.closest("tr").querySelector("button[name=row]").click();
+            }
+        });
+    });
+</script>
+{% endblock %}
