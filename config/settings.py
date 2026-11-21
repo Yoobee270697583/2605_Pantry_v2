@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     # "Continue with Google" on the login and sign up pages
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
     'kitchen',
     'households',
     'pantry',
@@ -206,3 +207,14 @@ if os.environ.get("GOOGLE_CLIENT_ID"):
         }],
     }
 
+# Facebook
+if os.environ.get("FACEBOOK_APP_ID"):
+    SOCIALACCOUNT_PROVIDERS["facebook"] = {
+        "METHOD": "oauth2",                         # standard redirect login, like Google
+        "SCOPE": ["email", "public_profile"],       # their email + basic profile (name)
+        "FIELDS": ["id", "email", "first_name", "last_name", "name"],
+        "APPS": [{
+            "client_id": os.environ["FACEBOOK_APP_ID"],
+            "secret": os.environ.get("FACEBOOK_APP_SECRET", ""),
+        }],
+    }
