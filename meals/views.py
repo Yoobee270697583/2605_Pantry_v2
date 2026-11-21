@@ -13,73 +13,89 @@ from .utils import deduct_recipe_from_pantry, visible_cooked, visible_plans
 
 # planning meals, marking them as cooked, and the history of cooked meals
 
+#=============================================================
+#                       PLANNED  MEALS                       #
+#=============================================================
 
 def go_back(request, fallback):
-    """Sends the user back to the page they pressed the button on, or to fallback if there isn't one.
-
-    The page comes from a hidden "next" field in the form. It's only used if it's
-    a page on this site - otherwise someone could link a button to a different website.
-    """
+    """ Sends the user back to the page they pressed the button on, or to a fallback if there isn't one.
+        The page comes from a hidden "next" field in the form. It's only used if it's
+        a page on this site - otherwise someone could link a button to a different website."""
+    
+    # Save the url/address of the page the request came from
     next_url = request.POST.get("next", "")
+    # Check that the url is from and approved by our app
     if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        # If it is, send the user there (sending them to where they were when they clicked the given button)
         return redirect(next_url)
+    # Otherwise, send them to a fallback location in the app, if there is no appropriate request
     return redirect(fallback)
 
 
+# User must be authenticated via allauth, else they are immediatly redirected to the login screen
 @login_required
 def planned_index(request):
     """The Planned Meals page. Shows every meal the household has planned, oldest first."""
+    # The household in question
     household = get_household(request.user)
-
-    # visible_plans leaves out plans for recipes another household has since made private.
-    # select_related gets each plan's recipe and who planned it in the same query,
-    # instead of V1's Recipe.query.get() for every plan
+    # Visible_plans leaves out plans for recipes another household has since made private.
+    # Select_related gets each plan's recipe and who planned it in the same query,
     plans = visible_plans(household).select_related("recipe", "added_by")
-
+    # Return the rendered template with the request and the planned meals data
     return render(request, "meals/planned.html", {"plans": plans})
 
 
+# User must be authenticated
 @login_required
+# The view rejects anything that isn't a POST
 @require_POST
 def add_to_plan(request, recipe_id):
     """Adds a recipe to the household's planned meals. One view for every "Plan this meal" button,
     since V2 recipes don't need copying into the user's account first like V1's searched ones did."""
+    # The household in question
     household = get_household(request.user)
-    recipe = get_object_or_404(visible_recipes(household), pk=recipe_id)
-
-    PlannedMeal.objects.create(household=household, recipe=recipe, added_by=request.user)
-
-    # nothing to do for the shopping list. it's worked out from the planned meals every time
-    # it's opened (shopping/utils.py), so V1's sync_shopping_list isn't needed
-
-    messages.success(request, f"{recipe.name} added to Planned Meals.")
+    # Save the currently visible recipes of the given household to a recipes variable
+    recipes = get_object_or_404(visible_recipes(household), pk=recipe_id)
+    # Make a new object of the recipe that gets planned, associated to the current user and household
+    PlannedMeal.objects.create(household=household, recipe=recipes, added_by=request.user)
+    # Save a success message about the meal being planned
+    messages.success(request, f"{recipes.name} added to Planned Meals.")
+    # Return the user to where they were, with the request data, or otherwise send them to planned meals index page (via go_back(..))
     return go_back(request, "planned:index")
 
 
 @login_required
 @require_POST
 def remove_from_plan(request, plan_id):
-    """Takes a meal off the household's plan without cooking it."""
+    """Takes a meal off the household's planed meals without cooking it."""
     # visible_plans only has this household's plans, so another household's plan is a 404
-    # (V1 didn't check this), and so is one whose recipe has since been made private
+    # and so is one whose recipe has since been made private
+
+    # The planned meal
     plan = get_object_or_404(visible_plans(get_household(request.user)), id=plan_id)
+    # The recipe's name
     name = plan.recipe.name
+    # Delete the plan
     plan.delete()
-
-    # the shopping list doesn't need updating here either - see add_to_plan
-
+    # Save a success message about the planned meal being deleted
     messages.success(request, f"{name} removed from Planned Meals.")
+    # Return the Planned Meals index page
     return redirect("planned:index")
+
+
+#=============================================================
+#                       COOKED MEALS                         #
+#=============================================================
 
 @login_required
 @require_POST
 def mark_as_cooked(request, plan_id):
     """Cooks a planned meal: takes its ingredients off the pantry, logs it in Cooked Meals and removes it from the plan.
+        All three happen together or not at all (transaction.atomic), so a crash halfway
+        can't take ingredients off the pantry without logging the meal. V1 did this with
+        try/except and db.session.rollback() - atomic does the rollback for us. """
 
-    All three happen together or not at all (transaction.atomic), so a crash halfway
-    can't take ingredients off the pantry without logging the meal. V1 did this with
-    try/except and db.session.rollback() - atomic does the rollback for us.
-    """
+    # The household in question        
     household = get_household(request.user)
 
     with transaction.atomic():
