@@ -1,0 +1,20 @@
+<ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+    {% for event in events %}
+        <li class="pantry-activity-row d-flex align-items-center gap-2">
+            <span class="pantry-avatar">{{ event.initial }}</span>
+            <div class="min-w-0 flex-grow-1">
+                <div class="text-truncate" title="{{ event.who }} {{ event.action }} {{ event.thing }} {{ event.after }}">
+                    <strong>{{ event.who }}</strong> {{ event.action }}
+                    {% if event.url %}
+                        <a href="{{ event.url }}">{{ event.thing }}</a>
+                    {% elif event.thing %}
+                        <span class="fw-medium">{{ event.thing }}</span>
+                    {% endif %}
+                    {{ event.after }}
+                </div>
+                {# the full date shows when you hover #}
+                <div class="small text-secondary" title="{{ event.when|date:'j M Y, g:i A' }}">{{ event.ago }}</div>
+            </div>
+        </li>
+    {% endfor %}
+</ul>
