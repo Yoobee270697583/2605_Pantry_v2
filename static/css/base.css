@@ -205,3 +205,29 @@ body {
 .min-w-0 {
     min-width: 0;
 }
+
+/* Social login buttons (Log in and Sign up pages).
+   Bootstrap 5.3 buttons read their colours from these variables, so hover and click states work too. */
+.btn-social-google {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #db4437;
+    --bs-btn-border-color: #db4437;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #c23321;
+    --bs-btn-hover-border-color: #c23321;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #a52a1a;
+    --bs-btn-active-border-color: #a52a1a;
+}
+
+.btn-social-facebook {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #1877f2;
+    --bs-btn-border-color: #1877f2;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #0f63d1;
+    --bs-btn-hover-border-color: #0f63d1;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #0b4fa8;
+    --bs-btn-active-border-color: #0b4fa8;
+}
