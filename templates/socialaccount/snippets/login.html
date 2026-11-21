@@ -1,4 +1,5 @@
 {% load socialaccount %}
+
 {% comment %}
     Overrides allauth's "Or use a third-party" part of the Sign In and Sign Up pages.
     allauth's own version is a plain "Google" link that goes to an extra "Continue?" page first.
@@ -6,17 +7,33 @@
     allauth's Continue page. With no Google keys (.env locally, Elastic Beanstalk on AWS) there are
     no providers, so nothing shows here at all.
 {% endcomment %}
-{% get_providers as socialaccount_providers %}
-{% if socialaccount_providers %}
+
+{% comment %}
+    Get the list of providers that have keys set in the environment (picked up in settings.py)
+{% endcomment %}
+
+{% get_providers as providers %}
+
+{% comment %}
+    If there are any, draw the little "or" divider below the "Sign In" button
+{% endcomment %}
+
+{% if providers %}
     <div class="d-flex align-items-center gap-3 my-3">
         <hr class="flex-grow-1 my-0">
         <span class="small text-body-secondary">or</span>
         <hr class="flex-grow-1 my-0">
     </div>
-    {% for provider in socialaccount_providers %}
+
+    {% comment %}
+        For each provider on the list (Google and Facebook) draw a login button
+    {% endcomment %}
+
+    {% for provider in providers %}
         <form method="post" action="{% provider_login_url provider process='login' %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-primary w-100">Continue with {{ provider.name }}</button>
         </form>
     {% endfor %}
+
 {% endif %}

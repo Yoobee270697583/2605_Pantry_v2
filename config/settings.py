@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'accounts',
     'allauth',
     'allauth.account',
+
     # "Continue with Google" on the login and sign up pages
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
@@ -183,21 +184,25 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 LOGIN_URL = "home"
 LOGIN_REDIRECT_URL = "kitchen:index"
 
-# "Continue with Google". The keys come from Google Cloud (Google Auth Platform > Clients) and go in
-# .env locally, or Elastic Beanstalk on AWS - never in the code. No GOOGLE_CLIENT_ID means no Google
-# button at all, so a missing key can't give anyone a broken button
-SOCIALACCOUNT_PROVIDERS = {
-    "google": {
-        # only the Google account's name and email address
-        "SCOPE": ["profile", "email"],
-        # always show Google's "Choose an account" page. without it Google signs you straight back
-        # in with the last account you used, so there's no way to switch to a different one
-        "AUTH_PARAMS": {"prompt": "select_account"},
-        "APPS": [],
-    },
-}
+
+
+# New users must fill in first and last name
+ACCOUNT_SIGNUP_FORM_CLASS = "accounts.forms.SignupForm"
+
+# Social login (Google and Facebook).
+# Keys come from the project team accounts, and live in .env / Elastic Beanstalk, never in git.
+# Each provider is only switched on if its key is set, so there's never a button that doesn't work shown to the user.
+SOCIALACCOUNT_PROVIDERS = {}
+
+
+# Google
 if os.environ.get("GOOGLE_CLIENT_ID"):
-    SOCIALACCOUNT_PROVIDERS["google"]["APPS"].append({
-        "client_id": os.environ["GOOGLE_CLIENT_ID"],
-        "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
-    })
+    SOCIALACCOUNT_PROVIDERS["google"] = {
+        "SCOPE": ["profile", "email"],                  # only their name and email
+        "AUTH_PARAMS": {"prompt": "select_account"},    # always show "Choose an account"
+        "APPS": [{
+            "client_id": os.environ["GOOGLE_CLIENT_ID"],
+            "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+        }],
+    }
+
