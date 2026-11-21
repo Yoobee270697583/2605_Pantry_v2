@@ -29,42 +29,73 @@
             <div class="card-body">
                 <h2 class="h5 mb-3">Members</h2>
                 <ul class="list-group list-group-flush">
-                    {% for member in members %}
-                        <li class="list-group-item px-0 d-flex flex-wrap align-items-center gap-2 gap-sm-3">
-                            <span class="pantry-avatar">{{ member.user.first_name|default:member.user.username|first|upper }}</span>
-                            <div class="flex-grow-1">
-                                <div>
-                                    {{ member.user.first_name|default:member.user.username }}
-                                    {% if member.role == "owner" %}<span class="badge text-bg-success">Owner</span>{% endif %}
-                                </div>
-                                <div class="small text-secondary">{% if member.pk == me.pk %}You · {% endif %}joined {{ member.joined_at|date:"j M Y" }}</div>
-                            </div>
-                            {% if is_owner and member.pk != me.pk %}
-                                {% with name=member.user.first_name|default:member.user.username %}
-                                <div class="d-flex gap-2 ms-auto">
-                                    <form method="post" action="{% url 'households:make_owner' member.pk %}"
-                                          onsubmit="return confirm('Make {{ name|escapejs }} the owner? You will become a normal member.');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Make owner</button>
-                                    </form>
-                                    <form method="post" action="{% url 'households:remove' member.pk %}"
-                                          onsubmit="return confirm('Remove {{ name|escapejs }}? They will get an empty household of their own.');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
-                                    </form>
-                                </div>
-                                {% endwith %}
-                            {% endif %}
-                        </li>
+                    {% for member in members|slice:":3" %}
+                        {% include "households/_member_row.html" %}
                     {% endfor %}
                 </ul>
+                {% comment %}only the first 3 are on the page, so the card stays the same size however
+                   many join. everyone is in the pop-up below{% endcomment %}
+                {% if members|length > 3 %}
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-2"
+                            data-bs-toggle="modal" data-bs-target="#all-members">
+                        See all {{ members|length }} members
+                    </button>
+                {% endif %}
             </div>
         </div>
 
-        {# on wide screens Leave sits under Members; on phones it moves to the very end (below) #}
-        {% if members|length > 1 %}
-            <div class="d-none d-xl-block">{% include "households/_leave.html" %}</div>
+        {% if members|length > 3 %}
+            <div class="modal fade" id="all-members" tabindex="-1" aria-labelledby="all-members-title" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 class="modal-title h5" id="all-members-title">Members ({{ members|length }})</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <ul class="list-group list-group-flush">
+                                {% for member in members %}
+                                    {% include "households/_member_row.html" %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         {% endif %}
+
+        <div class="card" id="activity">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Recent activity</h2>
+                {% if activity %}
+                    {# room for 10 rows on every page, so a shorter last page doesn't make the buttons jump up #}
+                    <div class="pantry-activity-page mb-3">
+                        {% include "households/_activity_list.html" with events=activity %}
+                    </div>
+                    {% comment %}always shown, in the same place - a button that can't be used is greyed out
+                       instead of hidden. #activity keeps the page scrolled to this card{% endcomment %}
+                    <nav class="d-flex align-items-center justify-content-between mb-3" aria-label="Recent activity pages">
+                        {% if activity_page > 1 %}
+                            <a href="?activity={{ activity_page|add:'-1' }}#activity" class="btn btn-outline-secondary btn-sm">&larr; Newer</a>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-secondary btn-sm" disabled>&larr; Newer</button>
+                        {% endif %}
+                        <span class="small text-secondary">Page {{ activity_page }}</span>
+                        {% if has_older_activity %}
+                            <a href="?activity={{ activity_page|add:'1' }}#activity" class="btn btn-outline-secondary btn-sm">Older &rarr;</a>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Older &rarr;</button>
+                        {% endif %}
+                    </nav>
+                    <p class="small text-secondary mb-0">Shows what's been added, planned, cooked, saved and ordered. Edits and deletes aren't shown.</p>
+                {% elif activity_page > 1 %}
+                    <p class="text-secondary mb-0">There's no more activity. <a href="?activity=1#activity">Back to the newest</a></p>
+                {% else %}
+                    <p class="text-secondary mb-0">Nothing yet. When anyone adds to the pantry, plans, cooks or saves a recipe, or orders the shopping list, it shows here.</p>
+                {% endif %}
+            </div>
+        </div>
+
     </div>
 
     <div class="col-xl-5 d-flex flex-column gap-3">
@@ -110,11 +141,14 @@
                 </p>
             </div>
         </div>
+
+        {% comment %}here rather than under the activity, so the long activity card doesn't push it
+           down. on phones this column comes second, so it ends up at the very end{% endcomment %}
+        {% if members|length > 1 %}
+            {% include "households/_leave.html" %}
+        {% endif %}
     </div>
 
-    {% if members|length > 1 %}
-        <div class="col-12 d-xl-none">{% include "households/_leave.html" %}</div>
-    {% endif %}
 </div>
 {% endblock %}
 

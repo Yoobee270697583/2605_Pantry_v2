@@ -7,6 +7,7 @@ from django.utils.dateformat import format as format_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from .activity import activity_page
 from .forms import JoinForm, RenameForm
 from .models import HouseholdMember
 from .utils import (
@@ -32,6 +33,14 @@ def index(request):
     members = household.members.select_related("user").order_by("joined_at", "id")
     me = next(member for member in members if member.user_id == request.user.id)
 
+    # ?activity=2 is the second page of Recent activity. anything that isn't a number is page 1
+    try:
+        page = max(1, int(request.GET.get("activity", 1)))
+    except ValueError:
+        page = 1
+    # shown living alone too, as your own history. My Kitchen only shows it once you share
+    activity, has_older = activity_page(household, request.user, page)
+
     return render(request, "households/index.html", {
         "household": household,
         "members": members,
@@ -40,6 +49,10 @@ def index(request):
         "invite_code": format_code(current_invite_code(household)),
         "join_form": JoinForm(),
         "rename_form": RenameForm(instance=household),
+        # who added, planned, cooked or saved what (households/activity.py) - one page at a time
+        "activity": activity,
+        "activity_page": page,
+        "has_older_activity": has_older,
     })
 
 

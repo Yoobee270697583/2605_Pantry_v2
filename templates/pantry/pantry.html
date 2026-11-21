@@ -145,7 +145,13 @@
                                         {# no picture - the Pantry icon, like custom recipes on the recipe page #}
                                         <img src="{% static 'img/pantry-icon.svg' %}" alt="" width="40" height="40" class="object-fit-contain flex-shrink-0 opacity-50 d-none d-sm-block">
                                     {% endif %}
-                                    <span>{{ item.ingredient.name }}</span>
+                                    <div>
+                                        <span>{{ item.ingredient.name }}</span>
+                                        {# in a shared household, who put it in the pantry. empty if their account is gone #}
+                                        {% if is_shared and item.added_by %}
+                                            <div class="small text-secondary">Added by {% if item.added_by == request.user %}you{% else %}{{ item.added_by.first_name|default:item.added_by.username }}{% endif %}</div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </td>
                             {# amount shows 2 instead of 2.0, and 1.5 instead of 1.50 - it's in recipes/templatetags/amount_tags.py #}

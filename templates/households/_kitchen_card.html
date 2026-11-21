@@ -1,10 +1,10 @@
 {% comment %}
     the household card on My Kitchen (data from the household_card tag in households/templatetags/household_tags.py).
     living alone: the invite code and the join box, since that's when they're needed.
-    once there are members: one line with a Manage button.
+    once there are members: one line with a Manage button, and the last few things people did.
 {% endcomment %}
 {% load static %}
-<div class="card{% if hh.living_alone %} h-100{% endif %}">
+<div class="card h-100">
     {% if hh.living_alone %}
         <div class="card-body">
             <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
@@ -58,6 +58,19 @@
             </div>
             <a href="{% url 'households:index' %}" class="btn btn-outline-primary btn-sm">Manage</a>
         </div>
+        {# the latest few things anyone in the household did - the full list is on the Household page #}
+        {% if hh.activity %}
+            <div class="card-body border-top pt-3">
+                <div class="d-flex align-items-baseline justify-content-between mb-2">
+                    <h3 class="h6 mb-0">Recent activity</h3>
+                    <a href="{% url 'households:index' %}" class="small">See all</a>
+                </div>
+                {# always room for 6 rows, so the card is the same size however many there are #}
+                <div class="pantry-activity-kitchen">
+                    {% include "households/_activity_list.html" with events=hh.activity %}
+                </div>
+            </div>
+        {% endif %}
     {% endif %}
 </div>
 {% if hh.living_alone %}<script src="{% static 'js/invite_code.js' %}" defer></script>{% endif %}

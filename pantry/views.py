@@ -47,7 +47,7 @@ def index(request):
 
         # only ever this household's items (a household of one for most people)
         household = get_household(request.user)
-        items = PantryItem.objects.filter(household=household).select_related("ingredient")
+        items = PantryItem.objects.filter(household=household).select_related("ingredient", "added_by")
 
         if search_query:
             items = items.filter(ingredient__name__icontains=search_query)
@@ -60,6 +60,8 @@ def index(request):
         # used to mark expired items in the table
         context["today"] = timezone.localdate()
         context["has_any_items"] = PantryItem.objects.filter(household=household).exists()
+        # "Added by" only shows when the pantry is shared with someone else
+        context["is_shared"] = household.members.count() > 1
 
     return render(request, "pantry/pantry.html", context)
 

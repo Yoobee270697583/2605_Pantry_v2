@@ -7,16 +7,12 @@
     <h1 class="mb-4">My Kitchen</h1>
 
     {% household_card as hh %}
-    {% if not hh.living_alone %}
-        <div class="mb-3">{% include "households/_kitchen_card.html" %}</div>
-    {% endif %}
 
+    {# the household card and Expiring soon side by side on wide screens, stacked on phones #}
     <div class="row g-3 mb-4">
-        {% if hh.living_alone %}
-            <div class="col-12 col-lg-6">{% include "households/_kitchen_card.html" %}</div>
-        {% endif %}
+        <div class="col-12 col-lg-6">{% include "households/_kitchen_card.html" %}</div>
 
-        <div class="col-12{% if hh.living_alone %} col-lg-6{% endif %}">
+        <div class="col-12 col-lg-6">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-2">
@@ -24,9 +20,9 @@
                         <a href="{% url 'pantry:index' %}" class="small">My Pantry</a>
                     </div>
                     {% if expiring %}
-                        <ul class="list-group list-group-flush{% if not hh.living_alone %} flex-row row row-cols-1 row-cols-lg-2 g-0{% endif %}">
+                        <ul class="list-group list-group-flush">
                             {% for item in expiring %}
-                                <li class="list-group-item px-0 d-flex align-items-center gap-3{% if not hh.living_alone %} col pe-lg-4{% endif %}">
+                                <li class="list-group-item px-0 d-flex align-items-center gap-3">
                                     {% if item.ingredient.image_url %}
                                         <img src="{{ item.ingredient.image_url }}" alt="" width="32" height="32" class="object-fit-contain flex-shrink-0" loading="lazy" onerror="this.style.visibility='hidden'">
                                     {% else %}

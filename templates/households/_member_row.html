@@ -1,0 +1,27 @@
+{# one person in the Members list - on the Household page and in its "See all members" pop-up #}
+<li class="list-group-item px-0 d-flex flex-wrap align-items-center gap-2 gap-sm-3">
+    <span class="pantry-avatar">{{ member.user.first_name|default:member.user.username|first|upper }}</span>
+    <div class="flex-grow-1">
+        <div>
+            {{ member.user.first_name|default:member.user.username }}
+            {% if member.role == "owner" %}<span class="badge text-bg-success">Owner</span>{% endif %}
+        </div>
+        <div class="small text-secondary">{% if member.pk == me.pk %}You · {% endif %}joined {{ member.joined_at|date:"j M Y" }}</div>
+    </div>
+    {% if is_owner and member.pk != me.pk %}
+        {% with name=member.user.first_name|default:member.user.username %}
+        <div class="d-flex gap-2 ms-auto">
+            <form method="post" action="{% url 'households:make_owner' member.pk %}"
+                  onsubmit="return confirm('Make {{ name|escapejs }} the owner? You will become a normal member.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Make owner</button>
+            </form>
+            <form method="post" action="{% url 'households:remove' member.pk %}"
+                  onsubmit="return confirm('Remove {{ name|escapejs }}? They will get an empty household of their own.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+            </form>
+        </div>
+        {% endwith %}
+    {% endif %}
+</li>

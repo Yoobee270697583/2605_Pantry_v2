@@ -125,6 +125,18 @@ body {
     flex-shrink: 0;
 }
 
+.pantry-activity-row {
+    height: 3rem;
+}
+
+.pantry-activity-kitchen {
+    height: calc(6 * 3rem + 5 * 0.5rem);
+}
+
+.pantry-activity-page {
+    min-height: calc(10 * 3rem + 9 * 0.5rem);
+}
+
 .pantry-account .dropdown-menu {
     --bs-dropdown-bg: var(--pantry-surface);
     --bs-dropdown-link-hover-bg: var(--pantry-hover-soft);
